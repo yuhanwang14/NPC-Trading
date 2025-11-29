@@ -33,5 +33,5 @@ set(headers
 )
 
 set(test_sources
-  src/tmp_test.cpp
+  src/message_bus_test.cpp
 )

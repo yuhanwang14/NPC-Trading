@@ -6,6 +6,10 @@
 #include <unordered_map>
 #include <string>
 #include <any>
+#include <queue>
+#include <deque>
+#include <mutex>
+#include <stdexcept>
 
 namespace npcTrading {
 
@@ -146,9 +150,23 @@ public:
     
     void start();
     void stop();
+    void run();  // Process queued messages (event loop)
     bool is_running() const { return running_; }
     
+    // ========================================================================
+    // Statistics
+    // ========================================================================
+    
+    size_t queue_size() const;
+    size_t total_messages_processed() const { return messages_processed_; }
+    
 private:
+    struct QueuedMessage {
+        std::string endpoint_or_topic;
+        std::shared_ptr<Message> message;
+        bool is_publish;  // true for publish, false for send
+    };
+    
     MessageBusConfig config_;
     bool running_;
     
@@ -159,9 +177,15 @@ private:
     // Topic subscribers (pub/sub)
     std::unordered_map<std::string, std::vector<MessageHandler>> subscribers_;
     
-    // TODO: Add message queue for async processing
-    // TODO: Add persistence layer
-    // TODO: Add message filtering/routing logic
+    // Message queue for async processing
+    std::deque<QueuedMessage> message_queue_;
+    mutable std::mutex queue_mutex_;  // For thread-safe queue access
+    
+    // Statistics
+    size_t messages_processed_ = 0;
+    
+    // Internal helpers
+    void process_message(const QueuedMessage& msg);
 };
 
 // ============================================================================
