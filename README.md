@@ -1,206 +1,287 @@
-[![Actions Status](https://github.com/filipdutescu/modern-cpp-template/workflows/MacOS/badge.svg)](https://github.com/filipdutescu/modern-cpp-template/actions)
-[![Actions Status](https://github.com/filipdutescu/modern-cpp-template/workflows/Windows/badge.svg)](https://github.com/filipdutescu/modern-cpp-template/actions)
-[![Actions Status](https://github.com/filipdutescu/modern-cpp-template/workflows/Ubuntu/badge.svg)](https://github.com/filipdutescu/modern-cpp-template/actions)
-[![codecov](https://codecov.io/gh/filipdutescu/modern-cpp-template/branch/master/graph/badge.svg)](https://codecov.io/gh/filipdutescu/modern-cpp-template)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/filipdutescu/modern-cpp-template)](https://github.com/filipdutescu/modern-cpp-template/releases)
+# NPC Trading System
 
-# Modern C++ Template
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![C++](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
+[![CMake](https://img.shields.io/badge/CMake-3.15+-blue.svg)](https://cmake.org/)
 
-A quick C++ template for modern CMake projects, aimed to be an easy to use
-starting point.
+An event-driven, high-performance algorithmic trading system for cryptocurrency markets, built with modern C++ and inspired by [Nautilus Trader](https://github.com/nautechsystems/nautilus_trader).
 
-This is my personal take on such a type of template, thus I might not use the
-best practices or you might disagree with how I do things. Any and all feedback
-is greatly appreciated!
+## Overview
+
+NPC Trading is a production-ready trading platform featuring:
+
+- **Message-Driven Architecture**: Unified event bus for all inter-component communication
+- **Real-Time Market Data**: WebSocket connectivity to cryptocurrency exchanges
+- **Order Management**: Complete OMS with support for NETTING and HEDGING modes
+- **Risk Management**: Pre-trade risk validation and position monitoring
+- **Strategy Framework**: Easy-to-use API for developing trading strategies
+- **Backtesting**: Historical data replay for strategy validation (planned)
+
+## Architecture
+
+The system is organized around five core components:
+
+1. **MessageBus**: Central event routing with pub/sub and req/rep patterns
+2. **Cache**: Shared state storage for orders, positions, and market data
+3. **DataEngine**: Market data subscription and distribution
+4. **RiskEngine**: Pre-trade validation and risk limits
+5. **ExecutionEngine**: Order routing and execution management
+
+For detailed architecture documentation, see [docs/architecture.md](docs/architecture.md).
 
 ## Features
 
-* Modern **CMake** configuration and project, which, to the best of my
-knowledge, uses the best practices,
+### Current (MVP Phase)
 
-* An example of a **Clang-Format** config, inspired from the base *Google* model,
-with minor tweaks. This is aimed only as a starting point, as coding style
-is a subjective matter, everyone is free to either delete it (for the *LLVM*
-default) or supply their own alternative,
+- ✅ Core message bus infrastructure
+- ✅ Component lifecycle management
+- ✅ Centralized cache system
+- 🚧 Binance WebSocket integration (in progress)
+- 🚧 Order execution and management (in progress)
+- 🚧 Grid trading strategy (in progress)
 
-* **Static analyzers** integration, with *Clang-Tidy* and *Cppcheck*, the former
-being the default option,
+### Planned
 
-* **Doxygen** support, through the `ENABLE_DOXYGEN` option, which you can enable
-if you wish to use it,
-
-* **Unit testing** support, through *GoogleTest* (with an option to enable
-*GoogleMock*) or *Catch2*,
-
-* **Code coverage**, enabled by using the `ENABLE_CODE_COVERAGE` option, through
-*Codecov* CI integration,
-
-* **Package manager support**, with *Conan* and *Vcpkg*, through their respective
-options
-
-* **CI workflows for Windows, Linux and MacOS** using *GitHub Actions*, making
-use of the caching features, to ensure minimum run time,
-
-* **.md templates** for: *README*, *Contributing Guideliness*,
-*Issues* and *Pull Requests*,
-
-* **Permissive license** to allow you to integrate it as easily as possible. The
-template is licensed under the [Unlicense](https://unlicense.org/),
-
-* Options to build as a header-only library or executable, not just a static or
-shared library.
-
-* **Ccache** integration, for speeding up rebuild times
+- ⏳ Backtesting framework
+- ⏳ Advanced risk metrics (VaR, drawdown limits)
+- ⏳ Execution algorithms (TWAP, VWAP)
+- ⏳ Multi-exchange support
+- ⏳ Performance analytics
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local
-machine for development and testing purposes.
-
 ### Prerequisites
 
-This project is meant to be only a template, thus versions of the software used
-can be change to better suit the needs of the developer(s). If you wish to use the
-template *as-is*, meaning using the versions recommended here, then you will need:
+- **CMake** v3.15 or higher
+- **C++ Compiler** with C++17 support (GCC 7+, Clang 5+, MSVC 2017+)
+- **GoogleTest** (for unit testing)
+- **Doxygen** (optional, for documentation generation)
 
-* **CMake v3.15+** - found at [https://cmake.org/](https://cmake.org/)
-
-* **C++ Compiler** - needs to support at least the **C++17** standard, i.e. *MSVC*,
-*GCC*, *Clang*
-
-> ***Note:*** *You also need to be able to provide ***CMake*** a supported
-[generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html).*
-
-### Installing
-
-It is fairly easy to install the project, all you need to do is clone if from
-[GitHub](https://github.com/filipdutescu/modern-cpp-template) or
-[generate a new repository from it](https://github.com/filipdutescu/modern-cpp-template/generate)
-(also on **GitHub**).
-
-If you wish to clone the repository, rather than generate from it, you simply need
-to run:
+### Building from Source
 
 ```bash
-git clone https://github.com/filipdutescu/modern-cpp-template/
+# Clone the repository
+git clone https://github.com/yuqiannemo/npcTrading.git
+cd npcTrading
+
+# Create build directory and configure
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Build the project
+cmake --build . --config Release
+
+# Run tests
+ctest -C Release
 ```
 
-After finishing getting a copy of the project, with any of the methods above, create
-a new folder in the `include/` folder, with the name of your project.  Edit
-`cmake/SourcesAndHeaders.cmake` to add your files.
-
-You will also need to rename the `cmake/ProjectConfig.cmake.in` file to start with
-the ***exact name of your project***. Such as `cmake/MyNewProjectConfig.cmake.in`.
-You should also make the same changes in the GitHub workflows provided, notably
-[`.github/workflows/ubuntu.yml`](.github/workflows/ubuntu.yml), in which you should
-replace the CMake option `-DProject_ENABLE_CODE_COVERAGE=1` to
-`-DMyNewProject_ENABLE_CODE_COVERAGE=1`.
-
-Finally, change `"Project"` from `CMakeLists.txt`, from
-
-```cmake
-project(
-  "Project"
-  VERSION 0.1.0
-  LANGUAGES CXX
-)
-```
-
-to the ***exact name of your project***, i.e. using the previous name it will become:
-
-```cmake
-project(
-  MyNewProject
-  VERSION 0.1.0
-  LANGUAGES CXX
-)
-```
-
-To install an already built project, you need to run the `install` target with CMake.
-For example:
+### Installation
 
 ```bash
-cmake --build build --target install --config Release
+# From the build directory
+cmake --build . --target install --config Release
 
-# a more general syntax for that command is:
-cmake --build <build_directory> --target install --config <desired_config>
+# Or specify custom installation directory
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install
+cmake --build . --target install --config Release
 ```
 
-## Building the project
+## Usage
 
-To build the project, all you need to do, ***after correctly
-[installing the project](README.md#Installing)***, is run a similar **CMake** routine
-to the the one below:
+### Creating a Simple Strategy
 
-```bash
-mkdir build/ && cd build/
-cmake .. -DCMAKE_INSTALL_PREFIX=/absolute/path/to/custom/install/directory
-cmake --build . --target install
+```cpp
+#include "npcTrading/strategy.hpp"
+#include "npcTrading/bar.hpp"
+
+class SimpleMovingAverageStrategy : public Strategy {
+public:
+    SimpleMovingAverageStrategy(const StrategyConfig& config)
+        : Strategy(config), fast_period_(10), slow_period_(30) {
+        subscribe_bars(BarType("BTCUSDT", "1-MINUTE"));
+    }
+    
+    void on_start() override {
+        log_info("Strategy started");
+    }
+    
+    void on_bar(const Bar& bar) override {
+        // Calculate moving averages
+        double fast_ma = calculate_sma(bars_, fast_period_);
+        double slow_ma = calculate_sma(bars_, slow_period_);
+        
+        // Generate signals
+        if (fast_ma > slow_ma && !has_position()) {
+            submit_market_order(Side::BUY, Quantity(0.001));
+        } else if (fast_ma < slow_ma && has_position()) {
+            submit_market_order(Side::SELL, Quantity(0.001));
+        }
+    }
+    
+private:
+    int fast_period_;
+    int slow_period_;
+};
 ```
 
-> ***Note:*** *The custom ``CMAKE_INSTALL_PREFIX`` can be omitted if you wish to
-install in [the default install location](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html).*
+### Running the Strategy
 
-More options that you can set for the project can be found in the
-[`cmake/StandardSettings.cmake` file](cmake/StandardSettings.cmake). For certain
-options additional configuration may be needed in their respective `*.cmake` files
-(i.e. Conan needs the `CONAN_REQUIRES` and might need the `CONAN_OPTIONS` to be setup
-for it work correctly; the two are set in the [`cmake/Conan.cmake` file](cmake/Conan.cmake)).
+```cpp
+#include "npcTrading/kernel.hpp"
+#include "my_strategy.hpp"
 
-## Generating the documentation
+int main() {
+    // Initialize trading kernel
+    TradingKernel kernel;
+    kernel.initialize_live();
+    
+    // Configure Binance data client
+    BinanceDataConfig data_config;
+    data_config.api_key = "your_api_key";
+    data_config.api_secret = "your_api_secret";
+    
+    // Configure Binance execution client
+    BinanceExecConfig exec_config;
+    exec_config.api_key = "your_api_key";
+    exec_config.api_secret = "your_api_secret";
+    
+    // Add clients to kernel
+    kernel.add_data_client(new BinanceDataClient(data_config));
+    kernel.add_exec_client(new BinanceExecClient(exec_config));
+    
+    // Add strategy
+    StrategyConfig strategy_config;
+    strategy_config.strategy_id = StrategyId("SMA_001");
+    kernel.add_strategy(new SimpleMovingAverageStrategy(strategy_config));
+    
+    // Start the system
+    kernel.start();
+    
+    // Run until stopped
+    kernel.run();
+    
+    return 0;
+}
+```
 
-In order to generate documentation for the project, you need to configure the build
-to use Doxygen. This is easily done, by modifying the workflow shown above as follows:
+## Development Roadmap
+
+### Phase 1: Core Infrastructure (Target: 2024-12-05)
+- [x] MessageBus implementation
+- [x] Component base class
+- [x] Cache system
+- [x] Clock abstraction
+
+### Phase 2: Binance Integration (Target: 2024-12-11)
+- [ ] DataEngine implementation
+- [ ] BinanceDataClient (WebSocket)
+- [ ] Market data objects (QuoteTick, TradeTick, Bar)
+- [ ] First successful order execution
+
+### Phase 3: Execution System (Target: 2024-12-25)
+- [ ] RiskEngine validation
+- [ ] ExecutionEngine routing
+- [ ] BinanceExecutionClient (REST)
+- [ ] Grid trading strategy
+- [ ] Order state management
+
+### Future Phases
+- [ ] Backtesting framework
+- [ ] Batch data processing
+- [ ] Advanced risk engine
+- [ ] Performance analytics
+
+## Project Structure
+
+```
+npcTrading/
+├── include/npcTrading/    # Public header files
+│   ├── message_bus.hpp
+│   ├── component.hpp
+│   ├── cache.hpp
+│   ├── data_engine.hpp
+│   ├── execution_engine.hpp
+│   ├── risk_engine.hpp
+│   └── strategy.hpp
+├── src/                   # Implementation files
+├── test/                  # Unit tests
+├── docs/                  # Documentation
+│   └── architecture.md    # Detailed architecture guide
+├── examples/              # Example strategies (planned)
+└── cmake/                 # CMake modules
+```
+
+## Generating Documentation
+
+The project uses Doxygen for API documentation:
 
 ```bash
-mkdir build/ && cd build/
-cmake .. -D<project_name>_ENABLE_DOXYGEN=1 -DCMAKE_INSTALL_PREFIX=/absolute/path/to/custom/install/directory
+# Configure with Doxygen enabled
+cd build
+cmake .. -DnpcTrading_ENABLE_DOXYGEN=1
+
+# Generate documentation
 cmake --build . --target doxygen-docs
+
+# Documentation will be in docs/html/index.html
 ```
 
-> ***Note:*** *This will generate a `docs/` directory in the **project's root directory**.*
-
-## Running the tests
-
-By default, the template uses [Google Test](https://github.com/google/googletest/)
-for unit testing. Unit testing can be disabled in the options, by setting the
-`ENABLE_UNIT_TESTING` (from
-[cmake/StandardSettings.cmake](cmake/StandardSettings.cmake)) to be false. To run
-the tests, simply use CTest, from the build directory, passing the desire
-configuration for which to run tests for. An example of this procedure is:
+## Testing
 
 ```bash
-cd build          # if not in the build directory already
-ctest -C Release  # or `ctest -C Debug` or any other configuration you wish to test
+# Run all tests
+cd build
+ctest -VV
 
-# you can also run tests with the `-VV` flag for a more verbose output (i.e.
-#GoogleTest output as well)
+# Run specific test
+./test/tmp_test_Tests
+
+# Run with code coverage (if enabled)
+cmake .. -DnpcTrading_ENABLE_CODE_COVERAGE=1
+cmake --build . --target coverage
 ```
 
-### End to end tests
+## Configuration Options
 
-If applicable, should be presented here.
+Available CMake options:
 
-### Coding style tests
+```bash
+# Enable/disable features
+-DnpcTrading_ENABLE_UNIT_TESTING=ON      # Build tests (default: ON)
+-DnpcTrading_ENABLE_DOXYGEN=ON           # Generate docs (default: OFF)
+-DnpcTrading_ENABLE_CODE_COVERAGE=ON     # Code coverage (default: OFF)
+-DnpcTrading_USE_CONAN=ON                # Use Conan package manager
+-DnpcTrading_USE_VCPKG=ON                # Use vcpkg package manager
 
-If applicable, should be presented here.
+# Build options
+-DCMAKE_BUILD_TYPE=Release               # Release or Debug
+-DCMAKE_INSTALL_PREFIX=/path/to/install  # Installation directory
+```
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our how you can
-become a contributor and the process for submitting pull requests to us.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Versioning
+### Development Team
 
-This project makes use of [SemVer](http://semver.org/) for versioning. A list of
-existing versions can be found in the
-[project's releases](https://github.com/filipdutescu/modern-cpp-template/releases).
-
-## Authors
-
-* **Filip-Ioan Dutescu** - [@filipdutescu](https://github.com/filipdutescu)
+- **Wang Yuhan** - Core engine development
+- **Yu Qian** - Architecture and integration
+- **Lin Siyu** - Strategy framework and testing
 
 ## License
 
-This project is licensed under the [Unlicense](https://unlicense.org/) - see the
-[LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Nautilus Trader](https://github.com/nautechsystems/nautilus_trader) - Architectural inspiration
+- [PandoraTrader](https://github.com/pegasusTrader/PandoraTrader) - Design patterns
+- [NexusTrader](https://github.com/Quantweb3-com/NexusTrader) - Implementation reference
+
+## Contact
+
+For questions or suggestions, please open an issue on GitHub.
+
+---
+
+**Disclaimer**: This software is for educational and research purposes. Use at your own risk. Cryptocurrency trading carries substantial risk of loss.
