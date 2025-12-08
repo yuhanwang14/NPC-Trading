@@ -1,30 +1,67 @@
 #pragma once
 
 #include "common.hpp"
+#include "model.hpp"
+#include "market_data.hpp"
 #include <vector>
-#include <memory>
 #include <unordered_map>
+#include <memory>
+#include <algorithm>
 
 namespace npcTrading {
 
-// Forward declarations
-class Order;
-class Position;
-class QuoteTick;
-class TradeTick;
-class Bar;
-class OrderBook;
-class Instrument;
-class Account;
+using BookFrequency = std::string;
+
+// ============================================================================
+// Simple fixed-capacity ring buffer (overwrites oldest on overflow)
+// ============================================================================
+template <typename T>
+class RingBuffer {
+public:
+    explicit RingBuffer(size_t capacity = 0)
+        : buffer_(capacity), head_(0), size_(0) {}
+
+    void push(const T& value) {
+        if (buffer_.empty()) {
+            return;
+        }
+        buffer_[head_] = value;
+        head_ = (head_ + 1) % buffer_.size();
+        if (size_ < buffer_.size()) {
+            ++size_;
+        }
+    }
+
+    std::vector<T> recent(size_t n) const {
+        n = std::min(n, size_);
+        std::vector<T> out;
+        out.reserve(n);
+        for (size_t i = 0; i < n; ++i) {
+            size_t idx = (head_ + buffer_.size() - 1 - i) % buffer_.size();
+            out.push_back(buffer_[idx]);
+        }
+        std::reverse(out.begin(), out.end()); // return in chronological order
+        return out;
+    }
+
+    size_t size() const { return size_; }
+    size_t capacity() const { return buffer_.size(); }
+    bool empty() const { return size_ == 0; }
+
+private:
+    std::vector<T> buffer_;
+    size_t head_;
+    size_t size_;
+};
 
 // ============================================================================
 // Cache Configuration
 // ============================================================================
 
 struct CacheConfig {
-    size_t bar_capacity = 10000;
-    size_t quote_capacity = 10000;
-    size_t trade_capacity = 10000;
+    size_t trade_capacity = 10000;     // trade history depth
+    size_t bar_capacity = 0;           // bar history depth
+    size_t orderbook_capacity = 0;     // order book history depth per frequency
     size_t orderbook_depth = 10;
     bool enable_snapshot = false;
 };
@@ -56,17 +93,17 @@ public:
     /**
      * @brief Get all open orders, optionally filtered by strategy
      */
-    std::vector<Order*> orders_open(const StrategyId& strategy_id = "") const;
+    std::vector<const Order*> orders_open(const StrategyId& strategy_id = "") const;
     
     /**
      * @brief Get all closed orders, optionally filtered by strategy
      */
-    std::vector<Order*> orders_closed(const StrategyId& strategy_id = "") const;
+    std::vector<const Order*> orders_closed(const StrategyId& strategy_id = "") const;
     
     /**
      * @brief Get order by ID
      */
-    Order* order(const OrderId& order_id) const;
+    const Order* order(const OrderId& order_id) const;
     
     /**
      * @brief Check if order exists
@@ -76,12 +113,12 @@ public:
     /**
      * @brief Add or update order
      */
-    void add_order(Order* order);
+    void add_order(Order order);
     
     /**
      * @brief Update order status
      */
-    void update_order(Order* order);
+    void update_order(const Order& order);
     
     // ========================================================================
     // Position Queries
@@ -90,23 +127,23 @@ public:
     /**
      * @brief Get all open positions, optionally filtered by strategy
      */
-    std::vector<Position*> positions_open(const StrategyId& strategy_id = "") const;
+    std::vector<const Position*> positions_open(const StrategyId& strategy_id = "") const;
     
     /**
      * @brief Get all closed positions, optionally filtered by strategy
      */
-    std::vector<Position*> positions_closed(const StrategyId& strategy_id = "") const;
+    std::vector<const Position*> positions_closed(const StrategyId& strategy_id = "") const;
     
     /**
      * @brief Get position by ID
      */
-    Position* position(const PositionId& position_id) const;
+    const Position* position(const PositionId& position_id) const;
     
     /**
      * @brief Get position for instrument (NETTING mode)
      */
-    Position* position_for_instrument(const InstrumentId& instrument_id, 
-                                      const StrategyId& strategy_id = "") const;
+    const Position* position_for_instrument(const InstrumentId& instrument_id, 
+                                            const StrategyId& strategy_id = "") const;
     
     /**
      * @brief Check if position exists
@@ -116,12 +153,12 @@ public:
     /**
      * @brief Add or update position
      */
-    void add_position(Position* position);
+    void add_position(Position position);
     
     /**
      * @brief Update position
      */
-    void update_position(Position* position);
+    void update_position(const Position& position);
     
     // ========================================================================
     // Market Data Queries
@@ -130,42 +167,64 @@ public:
     /**
      * @brief Get latest quote tick for instrument
      */
-    QuoteTick* quote_tick(const InstrumentId& instrument_id) const;
+    const QuoteTick* quote_tick(const InstrumentId& instrument_id) const;
     
     /**
      * @brief Get latest trade tick for instrument
      */
-    TradeTick* trade_tick(const InstrumentId& instrument_id) const;
+    const TradeTick* trade_tick(const InstrumentId& instrument_id) const;
     
     /**
      * @brief Get latest bar for bar type
      */
-    Bar* bar(const BarType& bar_type) const;
+    const Bar* bar(const BarType& bar_type) const;
+
+    /**
+     * @brief Get recent quotes for instrument (up to n, chronological). Quote history is not stored; returns latest only.
+     */
+    std::vector<QuoteTick> recent_quotes(const InstrumentId& instrument_id, size_t n) const;
+
+    /**
+     * @brief Get recent trades for instrument (up to n, chronological)
+     */
+    std::vector<TradeTick> recent_trades(const InstrumentId& instrument_id, size_t n) const;
+
+    /**
+     * @brief Get recent bars for bar type (up to n, chronological)
+     */
+    std::vector<Bar> recent_bars(const BarType& bar_type, size_t n) const;
     
     /**
-     * @brief Get order book for instrument
+     * @brief Get order book for instrument and frequency
      */
-    OrderBook* order_book(const InstrumentId& instrument_id) const;
+    const OrderBook* order_book(const InstrumentId& instrument_id,
+                                const BookFrequency& frequency = "default") const;
+    /**
+     * @brief Get recent order book snapshots (up to n, chronological)
+     */
+    std::vector<OrderBook> recent_order_books(const InstrumentId& instrument_id,
+                                              const BookFrequency& frequency,
+                                              size_t n) const;
     
     /**
      * @brief Add quote tick
      */
-    void add_quote_tick(QuoteTick* tick);
+    void add_quote_tick(const QuoteTick& tick);
     
     /**
      * @brief Add trade tick
      */
-    void add_trade_tick(TradeTick* tick);
+    void add_trade_tick(const TradeTick& tick);
     
     /**
      * @brief Add bar
      */
-    void add_bar(Bar* bar);
+    void add_bar(const Bar& bar);
     
     /**
      * @brief Update order book
      */
-    void update_order_book(OrderBook* book);
+    void update_order_book(const OrderBook& book, const BookFrequency& frequency = "default");
     
     // ========================================================================
     // Instrument/Account Queries
@@ -174,22 +233,22 @@ public:
     /**
      * @brief Get instrument specification
      */
-    Instrument* instrument(const InstrumentId& instrument_id) const;
+    const Instrument* instrument(const InstrumentId& instrument_id) const;
     
     /**
      * @brief Add instrument
      */
-    void add_instrument(Instrument* instrument);
+    void add_instrument(const Instrument& instrument);
     
     /**
      * @brief Get account
      */
-    Account* account(const AccountId& account_id) const;
+    const Account* account(const AccountId& account_id) const;
     
     /**
      * @brief Add or update account
      */
-    void add_account(Account* account);
+    void add_account(const Account& account);
     
     // ========================================================================
     // Cache Management
@@ -209,20 +268,33 @@ private:
     CacheConfig config_;
     
     // Order storage
-    std::unordered_map<OrderId, Order*> orders_;
+    std::unordered_map<OrderId, std::unique_ptr<Order>> orders_;
     
     // Position storage
-    std::unordered_map<PositionId, Position*> positions_;
+    std::unordered_map<PositionId, std::unique_ptr<Position>> positions_;
     
     // Market data storage
-    std::unordered_map<InstrumentId, QuoteTick*> quote_ticks_;
-    std::unordered_map<InstrumentId, TradeTick*> trade_ticks_;
-    std::unordered_map<std::string, Bar*> bars_;  // Key: bar_type string
-    std::unordered_map<InstrumentId, OrderBook*> order_books_;
+    std::unordered_map<InstrumentId, QuoteTick> quote_ticks_;
+    std::unordered_map<InstrumentId, TradeTick> trade_ticks_;
+    std::unordered_map<std::string, Bar> bars_;  // Key: bar_type string
+    std::unordered_map<std::string, OrderBook> order_books_; // Key: instrument|frequency
+    std::unordered_map<InstrumentId, RingBuffer<TradeTick>> trade_history_;
+    std::unordered_map<std::string, RingBuffer<Bar>> bar_history_;
+    std::unordered_map<std::string, RingBuffer<OrderBook>> order_book_history_;
+    
+    // Latest timestamps to filter out stale data
+    std::unordered_map<InstrumentId, Timestamp> latest_quote_ts_;
+    std::unordered_map<InstrumentId, Timestamp> latest_trade_ts_;
+    std::unordered_map<std::string, Timestamp> latest_bar_ts_;
+    std::unordered_map<std::string, Timestamp> latest_order_book_ts_;
+    std::unordered_map<OrderId, Timestamp> latest_order_ts_;
+    std::unordered_map<PositionId, Timestamp> latest_position_ts_;
+    std::unordered_map<InstrumentId, Timestamp> latest_instrument_ts_;
+    std::unordered_map<AccountId, Timestamp> latest_account_ts_;
     
     // Instrument/Account storage
-    std::unordered_map<InstrumentId, Instrument*> instruments_;
-    std::unordered_map<AccountId, Account*> accounts_;
+    std::unordered_map<InstrumentId, Instrument> instruments_;
+    std::unordered_map<AccountId, Account> accounts_;
     
     // TODO: Add indexing for fast queries
     // TODO: Add LRU eviction for capacity management

@@ -150,6 +150,7 @@ private:
 /// Bar aggregation specification
 class BarType {
 public:
+    BarType() = default;
     BarType(const InstrumentId& instrument_id, const std::string& spec)
         : instrument_id_(instrument_id), spec_(spec) {}
     

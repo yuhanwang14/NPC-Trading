@@ -91,11 +91,11 @@ void Strategy::cancel_all_orders(const InstrumentId& instrument_id) {
     msgbus_->send(Endpoints::RISK_ENGINE_EXECUTE, command);
 }
 
-std::vector<Position*> Strategy::positions_open() const {
+std::vector<const Position*> Strategy::positions_open() const {
     return cache_->positions_open(config_.strategy_id);
 }
 
-Position* Strategy::position_for(const InstrumentId& instrument_id) const {
+const Position* Strategy::position_for(const InstrumentId& instrument_id) const {
     return cache_->position_for_instrument(instrument_id, config_.strategy_id);
 }
 
