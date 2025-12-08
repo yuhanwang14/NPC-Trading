@@ -8,27 +8,17 @@ RiskEngine::RiskEngine(MessageBus* msgbus, Cache* cache, Clock* clock,
       trading_state_(config.initial_state) {
 }
 
-void RiskEngine::initialize() {
-    Component::initialize();
-    
+void RiskEngine::on_initialize() {
     // Register message handlers
     msgbus_->register_handler(
         Endpoints::RISK_ENGINE_EXECUTE,
         [this](const std::shared_ptr<Message>& msg) { handle_execute(msg); }
     );
-    
+
     msgbus_->register_handler(
         Endpoints::RISK_ENGINE_PROCESS,
         [this](const std::shared_ptr<Message>& msg) { handle_process(msg); }
     );
-}
-
-void RiskEngine::start() {
-    Component::start();
-}
-
-void RiskEngine::stop() {
-    Component::stop();
 }
 
 void RiskEngine::set_trading_state(TradingState state) {
@@ -120,12 +110,14 @@ LiveRiskEngine::LiveRiskEngine(MessageBus* msgbus, Cache* cache, Clock* clock,
     : RiskEngine(msgbus, cache, clock, config), live_config_(config) {
 }
 
-void LiveRiskEngine::start() {
-    RiskEngine::start();
+void LiveRiskEngine::on_start() {
+    RiskEngine::on_start();
+    // TODO: Live-specific start logic
 }
 
-void LiveRiskEngine::stop() {
-    RiskEngine::stop();
+void LiveRiskEngine::on_stop() {
+    RiskEngine::on_stop();
+    // TODO: Live-specific stop logic
 }
 
 } // namespace npcTrading

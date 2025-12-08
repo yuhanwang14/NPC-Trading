@@ -6,6 +6,7 @@
 #include "message_bus.hpp"
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 namespace npcTrading {
 
@@ -50,7 +51,97 @@ private:
     BarType bar_type_;
 };
 
-// TODO: Add SubscribeQuotes, UnsubscribeQuotes, SubscribeTrades, etc.
+class SubscribeQuotes : public DataCommand {
+public:
+    explicit SubscribeQuotes(InstrumentId instrument_id, ClientId client_id = "")
+        : instrument_id_(std::move(instrument_id)), client_id_(std::move(client_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+    ClientId client_id() const { return client_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "SubscribeQuotes"; }
+
+private:
+    InstrumentId instrument_id_;
+    ClientId client_id_;
+};
+
+class UnsubscribeQuotes : public DataCommand {
+public:
+    explicit UnsubscribeQuotes(InstrumentId instrument_id)
+        : instrument_id_(std::move(instrument_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "UnsubscribeQuotes"; }
+
+private:
+    InstrumentId instrument_id_;
+};
+
+class SubscribeTrades : public DataCommand {
+public:
+    explicit SubscribeTrades(InstrumentId instrument_id, ClientId client_id = "")
+        : instrument_id_(std::move(instrument_id)), client_id_(std::move(client_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+    ClientId client_id() const { return client_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "SubscribeTrades"; }
+
+private:
+    InstrumentId instrument_id_;
+    ClientId client_id_;
+};
+
+class UnsubscribeTrades : public DataCommand {
+public:
+    explicit UnsubscribeTrades(InstrumentId instrument_id)
+        : instrument_id_(std::move(instrument_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "UnsubscribeTrades"; }
+
+private:
+    InstrumentId instrument_id_;
+};
+
+class SubscribeOrderBook : public DataCommand {
+public:
+    SubscribeOrderBook(InstrumentId instrument_id, int depth = 10, ClientId client_id = "")
+        : instrument_id_(std::move(instrument_id)), depth_(depth), client_id_(std::move(client_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+    int depth() const { return depth_; }
+    ClientId client_id() const { return client_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "SubscribeOrderBook"; }
+
+private:
+    InstrumentId instrument_id_;
+    int depth_;
+    ClientId client_id_;
+};
+
+class UnsubscribeOrderBook : public DataCommand {
+public:
+    explicit UnsubscribeOrderBook(InstrumentId instrument_id)
+        : instrument_id_(std::move(instrument_id)) {}
+
+    InstrumentId instrument_id() const { return instrument_id_; }
+
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "UnsubscribeOrderBook"; }
+
+private:
+    InstrumentId instrument_id_;
+};
 
 // ============================================================================
 // Data Requests (sent to DataEngine.request)
@@ -186,10 +277,12 @@ public:
     // Component Lifecycle
     // ========================================================================
     
-    void initialize() override;
-    void start() override;
-    void stop() override;
-    
+protected:
+    void on_initialize() override;
+    void on_start() override;
+    void on_stop() override;
+
+public:
     // ========================================================================
     // Client Management
     // ========================================================================
@@ -239,11 +332,11 @@ public:
                    const LiveDataEngineConfig& config);
     
     ~LiveDataEngine() override = default;
-    
-    void start() override;
-    void stop() override;
-    
+
 private:
+    void on_start() override;
+    void on_stop() override;
+
     LiveDataEngineConfig live_config_;
     
     // TODO: Add connection monitoring
