@@ -220,12 +220,12 @@ public:
     /**
      * @brief Get all open positions for this strategy
      */
-    std::vector<Position*> positions_open() const;
+    std::vector<const Position*> positions_open() const;
     
     /**
      * @brief Get position for a specific instrument
      */
-    Position* position_for(const InstrumentId& instrument_id) const;
+    const Position* position_for(const InstrumentId& instrument_id) const;
     
     /**
      * @brief Check if strategy has any open position
@@ -288,11 +288,11 @@ private:
 // ExecAlgorithm - Complex execution algorithms
 // ============================================================================
 
-/**
+/*
  * @brief Base class for execution algorithms (TWAP, VWAP, etc.)
  * 
  * Execution algorithms manage parent orders and spawn child orders.
- */
+*/
 class ExecAlgorithm : public Actor {
 public:
     ExecAlgorithm(const std::string& algo_id,

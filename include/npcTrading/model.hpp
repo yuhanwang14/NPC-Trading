@@ -20,7 +20,8 @@ public:
           OrderType type,
           Quantity quantity,
           Price price = Price(0),
-          TimeInForce time_in_force = TimeInForce::GTC)
+          TimeInForce time_in_force = TimeInForce::GTC,
+          Timestamp timestamp = std::chrono::system_clock::now())
         : order_id_(order_id),
           strategy_id_(strategy_id),
           instrument_id_(instrument_id),
@@ -31,7 +32,8 @@ public:
           price_(price),
           time_in_force_(time_in_force),
           filled_qty_(0.0),
-          status_(OrderStatus::INITIALIZED) {}
+          status_(OrderStatus::INITIALIZED),
+          timestamp_(timestamp) {}
     
     // Getters
     OrderId order_id() const { return order_id_; }
@@ -46,6 +48,7 @@ public:
     Quantity filled_qty() const { return filled_qty_; }
     OrderStatus status() const { return status_; }
     PositionId position_id() const { return position_id_; }
+    Timestamp timestamp() const { return timestamp_; }
     
     // Status checks
     bool is_open() const;
@@ -58,6 +61,7 @@ public:
     void set_position_id(const PositionId& position_id) { position_id_ = position_id; }
     void update_price(Price new_price) { price_ = new_price; }
     void update_quantity(Quantity new_quantity) { quantity_ = new_quantity; }
+    void set_timestamp(Timestamp ts) { timestamp_ = ts; }
     
 private:
     OrderId order_id_;
@@ -72,6 +76,7 @@ private:
     Quantity filled_qty_;
     OrderStatus status_;
     PositionId position_id_;
+    Timestamp timestamp_;
 };
 
 // ============================================================================
@@ -117,7 +122,8 @@ class Position {
 public:
     Position(PositionId position_id,
              InstrumentId instrument_id,
-             StrategyId strategy_id)
+             StrategyId strategy_id,
+             Timestamp timestamp = std::chrono::system_clock::now())
         : position_id_(position_id),
           instrument_id_(instrument_id),
           strategy_id_(strategy_id),
@@ -125,7 +131,8 @@ public:
           quantity_(0.0),
           entry_price_(0.0),
           realized_pnl_(0.0, "USD"),
-          unrealized_pnl_(0.0, "USD") {}
+          unrealized_pnl_(0.0, "USD"),
+          timestamp_(timestamp) {}
     
     PositionId position_id() const { return position_id_; }
     InstrumentId instrument_id() const { return instrument_id_; }
@@ -135,6 +142,7 @@ public:
     Price entry_price() const { return entry_price_; }
     Money realized_pnl() const { return realized_pnl_; }
     Money unrealized_pnl() const { return unrealized_pnl_; }
+    Timestamp timestamp() const { return timestamp_; }
     
     bool is_open() const { return side_ != PositionSide::FLAT; }
     bool is_closed() const { return side_ == PositionSide::FLAT; }
@@ -154,6 +162,7 @@ private:
     Price entry_price_;
     Money realized_pnl_;
     Money unrealized_pnl_;
+    Timestamp timestamp_;
 };
 
 // ============================================================================
@@ -162,28 +171,35 @@ private:
 
 class Account {
 public:
-    explicit Account(AccountId account_id)
+    Account() : account_id_(), balance_(0.0, "USD"), margin_used_(0.0, "USD"),
+                margin_available_(0.0, "USD"), timestamp_(std::chrono::system_clock::now()) {}
+
+    explicit Account(AccountId account_id, Timestamp timestamp = std::chrono::system_clock::now())
         : account_id_(account_id),
           balance_(0.0, "USD"),
           margin_used_(0.0, "USD"),
-          margin_available_(0.0, "USD") {}
+          margin_available_(0.0, "USD"),
+          timestamp_(timestamp) {}
     
     AccountId account_id() const { return account_id_; }
     Money balance() const { return balance_; }
     Money margin_used() const { return margin_used_; }
     Money margin_available() const { return margin_available_; }
+    Timestamp timestamp() const { return timestamp_; }
     
     void set_balance(Money balance) { balance_ = balance; }
     void update_margin(Money used, Money available) {
         margin_used_ = used;
         margin_available_ = available;
     }
+    void set_timestamp(Timestamp ts) { timestamp_ = ts; }
     
 private:
     AccountId account_id_;
     Money balance_;
     Money margin_used_;
     Money margin_available_;
+    Timestamp timestamp_;
 };
 
 } // namespace npcTrading
