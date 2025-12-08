@@ -7,27 +7,17 @@ ExecutionEngine::ExecutionEngine(MessageBus* msgbus, Cache* cache, Clock* clock,
     : Component("ExecutionEngine", msgbus, cache, clock), config_(config) {
 }
 
-void ExecutionEngine::initialize() {
-    Component::initialize();
-    
+void ExecutionEngine::on_initialize() {
     // Register message handlers
     msgbus_->register_handler(
         Endpoints::EXEC_ENGINE_EXECUTE,
         [this](const std::shared_ptr<Message>& msg) { handle_execute(msg); }
     );
-    
+
     msgbus_->register_handler(
         Endpoints::EXEC_ENGINE_PROCESS,
         [this](const std::shared_ptr<Message>& msg) { handle_process(msg); }
     );
-}
-
-void ExecutionEngine::start() {
-    Component::start();
-}
-
-void ExecutionEngine::stop() {
-    Component::stop();
 }
 
 void ExecutionEngine::register_client(std::shared_ptr<ExecutionClient> client) {
@@ -77,12 +67,14 @@ LiveExecutionEngine::LiveExecutionEngine(MessageBus* msgbus, Cache* cache, Clock
     : ExecutionEngine(msgbus, cache, clock, config), live_config_(config) {
 }
 
-void LiveExecutionEngine::start() {
-    ExecutionEngine::start();
+void LiveExecutionEngine::on_start() {
+    ExecutionEngine::on_start();
+    // TODO: Live-specific start logic
 }
 
-void LiveExecutionEngine::stop() {
-    ExecutionEngine::stop();
+void LiveExecutionEngine::on_stop() {
+    ExecutionEngine::on_stop();
+    // TODO: Live-specific stop logic
 }
 
 } // namespace npcTrading

@@ -5,6 +5,7 @@ set(sources
     src/component.cpp
     src/cache.cpp
     src/clock.cpp
+    src/market_data.cpp
     src/data_engine.cpp
     src/execution_engine.cpp
     src/risk_engine.cpp
@@ -35,4 +36,5 @@ set(headers
 set(test_sources
   src/cache_test.cpp
   src/message_bus_test.cpp
+  src/clock_test.cpp
 )

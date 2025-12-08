@@ -5,6 +5,9 @@
 #include "clock.hpp"
 #include <string>
 #include <memory>
+#include <atomic>
+#include <mutex>
+#include <stdexcept>
 
 namespace npcTrading {
 
@@ -40,56 +43,70 @@ public:
      * @brief Pre-initialization phase
      * Override to perform setup before initialization
      */
-    virtual void pre_initialize();
+    void pre_initialize();
     
     /**
      * @brief Initialize the component
      * Override to perform initialization logic
      */
-    virtual void initialize();
+    void initialize();
     
     /**
      * @brief Prepare component for running
      * Override to perform setup before start
      */
-    virtual void ready();
+    void ready();
     
     /**
      * @brief Start the component
      * Override to begin operation
      */
-    virtual void start();
+    void start();
     
     /**
      * @brief Stop the component
      * Override to gracefully shutdown
      */
-    virtual void stop();
+    void stop();
     
     /**
      * @brief Dispose of component resources
      * Override to clean up resources
      */
-    virtual void dispose();
+    void dispose();
     
     // ========================================================================
     // State Queries
     // ========================================================================
     
-    ComponentState state() const { return state_; }
+    ComponentState state() const { return state_.load(); }
     ComponentId id() const { return id_; }
-    bool is_initialized() const { return state_ >= ComponentState::INITIALIZED; }
-    bool is_running() const { return state_ == ComponentState::RUNNING; }
-    bool is_stopped() const { return state_ == ComponentState::STOPPED; }
+    bool is_initialized() const { return state_.load() >= ComponentState::INITIALIZED; }
+    bool is_running() const { return state_.load() == ComponentState::RUNNING; }
+    bool is_stopped() const { return state_.load() == ComponentState::STOPPED; }
+
+    // Infrastructure accessors
+    MessageBus* msgbus() const { return msgbus_; }
+    Cache* cache() const { return cache_; }
+    Clock* clock() const { return clock_; }
     
 protected:
+    // Hooks for derived classes (override these instead of lifecycle methods)
+    virtual void on_pre_initialize() {}
+    virtual void on_initialize() {}
+    virtual void on_ready() {}
+    virtual void on_start() {}
+    virtual void on_stop() {}
+    virtual void on_dispose() {}
+
     // Core infrastructure (accessible by derived classes)
     ComponentId id_;
     MessageBus* msgbus_;
     Cache* cache_;
     Clock* clock_;
     
-    ComponentState state_;
+    std::atomic<ComponentState> state_;
+    mutable std::mutex state_mutex_;
     
     // Helper methods
     void transition_to(ComponentState new_state);

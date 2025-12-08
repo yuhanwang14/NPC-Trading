@@ -67,9 +67,10 @@ public:
     // Component Lifecycle
     // ========================================================================
     
-    void initialize() override;
-    void start() override;
-    void stop() override;
+protected:
+    void on_initialize() override;
+    void on_start() override;
+    void on_stop() override;
     
     // ========================================================================
     // Trading State Management
@@ -163,11 +164,11 @@ public:
                    const LiveRiskEngineConfig& config);
     
     ~LiveRiskEngine() override = default;
-    
-    void start() override;
-    void stop() override;
-    
+
 private:
+    void on_start() override;
+    void on_stop() override;
+
     LiveRiskEngineConfig live_config_;
     
     // TODO: Add periodic reconciliation
