@@ -26,6 +26,8 @@ if (UNIX)
     add_compile_options("$<$<CONFIG:DEBUG>:-D_DEBUG>")    #this will allow to use same _DEBUG macro available in both Linux as well as Windows - MSCV environment. Easy to put Debug specific code.
 endif (UNIX)
 
+set(${PROJECT_NAME}_USE_ALT_NAMES OFF CACHE BOOL "Use alternative names for the project, such as naming the include directory all lowercase." FORCE)
+
 
 #
 # Setup alternative names
