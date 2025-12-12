@@ -70,6 +70,17 @@ foreach(file ${test_sources})
   endif()
 
   #
+  # Explicitly set RPATH for tests on macOS
+  #
+  if(APPLE)
+      set_target_properties(${test_name}_Tests PROPERTIES
+          BUILD_WITH_INSTALL_RPATH TRUE
+          # Prefer Homebrew paths
+          INSTALL_RPATH "/opt/homebrew/lib"
+      )
+  endif()
+
+  #
   # Add the unit tests
   #
 

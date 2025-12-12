@@ -14,6 +14,19 @@ project(
 # Set project options
 #
 
+# Fix for macOS RPATH issues
+if(APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    # Prefer Homebrew paths
+    set(CMAKE_INSTALL_RPATH "/opt/homebrew/lib" "/usr/local/lib")
+    
+    # Help CMake find Homebrew packages
+    if (EXISTS "/opt/homebrew")
+        list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+    endif()
+endif()
+
 include(cmake/StandardSettings.cmake)
 include(cmake/StaticAnalyzers.cmake)
 include(cmake/Utils.cmake)
