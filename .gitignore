@@ -4,6 +4,9 @@ CMakeCache.*
 CMakeFiles/*
 [Tt]esting/*
 
+# CMake Compilation Database
+compile_commands.json
+
 ### VisualStudioCode ###
 .vscode/*
 .vscode/settings.json

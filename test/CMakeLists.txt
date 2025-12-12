@@ -76,7 +76,7 @@ foreach(file ${test_sources})
       set_target_properties(${test_name}_Tests PROPERTIES
           BUILD_WITH_INSTALL_RPATH TRUE
           # Prefer Homebrew paths
-          INSTALL_RPATH "/opt/homebrew/lib"
+          INSTALL_RPATH "/opt/homebrew/lib;/usr/local/lib"
       )
   endif()
 
