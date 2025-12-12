@@ -19,23 +19,25 @@ public:
 
 class SubmitOrder : public TradingCommand {
 public:
-    explicit SubmitOrder(Order* order) : order_(order) {}
+    explicit SubmitOrder(std::shared_ptr<Order> order) : order_(std::move(order)) {}
     
-    Order* order() const { return order_; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     
     Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
     std::string type() const override { return "SubmitOrder"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
 };
 
 class ModifyOrder : public TradingCommand {
 public:
-    ModifyOrder(Order* order, Quantity new_quantity, Price new_price)
-        : order_(order), new_quantity_(new_quantity), new_price_(new_price) {}
+    ModifyOrder(std::shared_ptr<Order> order, Quantity new_quantity, Price new_price)
+        : order_(std::move(order)), new_quantity_(new_quantity), new_price_(new_price) {}
     
-    Order* order() const { return order_; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     Quantity new_quantity() const { return new_quantity_; }
     Price new_price() const { return new_price_; }
     
@@ -43,22 +45,23 @@ public:
     std::string type() const override { return "ModifyOrder"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     Quantity new_quantity_;
     Price new_price_;
 };
 
 class CancelOrder : public TradingCommand {
 public:
-    explicit CancelOrder(Order* order) : order_(order) {}
+    explicit CancelOrder(std::shared_ptr<Order> order) : order_(std::move(order)) {}
     
-    Order* order() const { return order_; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     
     Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
     std::string type() const override { return "CancelOrder"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
 };
 
 class CancelAllOrders : public TradingCommand {
@@ -88,102 +91,108 @@ public:
 
 class OrderSubmitted : public OrderEvent {
 public:
-    explicit OrderSubmitted(Order* order, Timestamp timestamp)
-        : order_(order), timestamp_(timestamp) {}
+    explicit OrderSubmitted(std::shared_ptr<Order> order, Timestamp timestamp)
+        : order_(std::move(order)), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderSubmitted"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     Timestamp timestamp_;
 };
 
 class OrderAccepted : public OrderEvent {
 public:
-    explicit OrderAccepted(Order* order, Timestamp timestamp)
-        : order_(order), timestamp_(timestamp) {}
+    explicit OrderAccepted(std::shared_ptr<Order> order, Timestamp timestamp)
+        : order_(std::move(order)), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderAccepted"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     Timestamp timestamp_;
 };
 
 class OrderRejected : public OrderEvent {
 public:
-    OrderRejected(Order* order, const std::string& reason, Timestamp timestamp)
-        : order_(order), reason_(reason), timestamp_(timestamp) {}
+    OrderRejected(std::shared_ptr<Order> order, const std::string& reason, Timestamp timestamp)
+        : order_(std::move(order)), reason_(reason), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     std::string reason() const { return reason_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderRejected"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     std::string reason_;
     Timestamp timestamp_;
 };
 
 class OrderFilled : public OrderEvent {
 public:
-    OrderFilled(Order* order, const Fill& fill, Timestamp timestamp)
-        : order_(order), fill_(fill), timestamp_(timestamp) {}
+    OrderFilled(std::shared_ptr<Order> order, const Fill& fill, Timestamp timestamp)
+        : order_(std::move(order)), fill_(fill), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     const Fill& fill() const { return fill_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderFilled"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     Fill fill_;
     Timestamp timestamp_;
 };
 
 class OrderCanceled : public OrderEvent {
 public:
-    explicit OrderCanceled(Order* order, Timestamp timestamp)
-        : order_(order), timestamp_(timestamp) {}
+    explicit OrderCanceled(std::shared_ptr<Order> order, Timestamp timestamp)
+        : order_(std::move(order)), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderCanceled"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     Timestamp timestamp_;
 };
 
 class OrderDenied : public OrderEvent {
 public:
-    OrderDenied(Order* order, const std::string& reason, Timestamp timestamp)
-        : order_(order), reason_(reason), timestamp_(timestamp) {}
+    OrderDenied(std::shared_ptr<Order> order, const std::string& reason, Timestamp timestamp)
+        : order_(std::move(order)), reason_(reason), timestamp_(timestamp) {}
     
-    OrderId order_id() const override { return order_->order_id(); }
-    Order* order() const { return order_; }
+    OrderId order_id() const override { return order_ ? order_->order_id() : ""; }
+    Order* order() const { return order_.get(); }
+    std::shared_ptr<Order> order_ptr() const { return order_; }
     std::string reason() const { return reason_; }
     
     Timestamp timestamp() const override { return timestamp_; }
     std::string type() const override { return "OrderDenied"; }
     
 private:
-    Order* order_;
+    std::shared_ptr<Order> order_;
     std::string reason_;
     Timestamp timestamp_;
 };
@@ -261,9 +270,10 @@ public:
     // Component Lifecycle
     // ========================================================================
     
-    void initialize() override;
-    void start() override;
-    void stop() override;
+protected:
+    void on_initialize() override;
+    void on_start() override;
+    void on_stop() override;
     
     // ========================================================================
     // Client Management
@@ -306,11 +316,11 @@ public:
                         const LiveExecEngineConfig& config);
     
     ~LiveExecutionEngine() override = default;
-    
-    void start() override;
-    void stop() override;
-    
+
 private:
+    void on_start() override;
+    void on_stop() override;
+
     LiveExecEngineConfig live_config_;
     
     // TODO: Add reconciliation logic

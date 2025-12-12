@@ -7,6 +7,11 @@
 #include "market_data.hpp"
 #include "execution_engine.hpp"
 #include <memory>
+#include <unordered_set>
+#include <string>
+#include <unordered_map>
+#include <atomic>
+#include <functional>
 
 namespace npcTrading {
 
@@ -126,11 +131,32 @@ public:
     void unsubscribe_order_book(const InstrumentId& instrument_id);
     
 protected:
+    struct BarKey {
+        InstrumentId instrument_id;
+        std::string spec;
+
+        bool operator==(const BarKey& other) const {
+            return instrument_id == other.instrument_id && spec == other.spec;
+        }
+    };
+
+    struct BarKeyHash {
+        std::size_t operator()(const BarKey& k) const {
+            return std::hash<std::string>{}(k.instrument_id) ^ (std::hash<std::string>{}(k.spec) << 1);
+        }
+    };
+
     // Message handler registration
     void register_event_handler(const std::string& endpoint);
     
     // Internal event dispatcher
     void handle_message(const std::shared_ptr<Message>& msg);
+
+    // Track subscriptions to avoid duplicates
+    std::unordered_set<BarKey, BarKeyHash> bar_subscriptions_;
+    std::unordered_set<InstrumentId> quote_subscriptions_;
+    std::unordered_set<InstrumentId> trade_subscriptions_;
+    std::unordered_set<InstrumentId> orderbook_subscriptions_;
 };
 
 // ============================================================================
@@ -172,12 +198,12 @@ public:
     /**
      * @brief Submit a single order
      */
-    void submit_order(Order* order);
+    void submit_order(const std::shared_ptr<Order>& order);
     
     /**
      * @brief Submit multiple orders atomically
      */
-    void submit_order_list(const std::vector<Order*>& orders);
+    void submit_order_list(const std::vector<std::shared_ptr<Order>>& orders);
     
     /**
      * @brief Submit a market order
@@ -201,12 +227,12 @@ public:
     /**
      * @brief Modify an existing order
      */
-    void modify_order(Order* order, Quantity new_quantity, Price new_price);
+    void modify_order(const std::shared_ptr<Order>& order, Quantity new_quantity, Price new_price);
     
     /**
      * @brief Cancel an order
      */
-    void cancel_order(Order* order);
+    void cancel_order(const std::shared_ptr<Order>& order);
     
     /**
      * @brief Cancel all orders for an instrument
@@ -220,12 +246,12 @@ public:
     /**
      * @brief Get all open positions for this strategy
      */
-    std::vector<Position*> positions_open() const;
+    std::vector<const Position*> positions_open() const;
     
     /**
      * @brief Get position for a specific instrument
      */
-    Position* position_for(const InstrumentId& instrument_id) const;
+    const Position* position_for(const InstrumentId& instrument_id) const;
     
     /**
      * @brief Check if strategy has any open position
@@ -281,18 +307,20 @@ protected:
     OrderId generate_order_id();
     
 private:
-    int order_counter_ = 0;
+    std::atomic<int> order_counter_{0};
+    // Track locally created orders to manage lifetime
+    std::unordered_map<OrderId, std::shared_ptr<Order>> orders_;
 };
 
 // ============================================================================
 // ExecAlgorithm - Complex execution algorithms
 // ============================================================================
 
-/**
+/*
  * @brief Base class for execution algorithms (TWAP, VWAP, etc.)
  * 
  * Execution algorithms manage parent orders and spawn child orders.
- */
+*/
 class ExecAlgorithm : public Actor {
 public:
     ExecAlgorithm(const std::string& algo_id,

@@ -7,38 +7,34 @@ DataEngine::DataEngine(MessageBus* msgbus, Cache* cache, Clock* clock,
     : Component("DataEngine", msgbus, cache, clock), config_(config) {
 }
 
-void DataEngine::initialize() {
-    Component::initialize();
-    
+void DataEngine::on_initialize() {
     // Register message handlers
     msgbus_->register_handler(
         Endpoints::DATA_ENGINE_EXECUTE,
         [this](const std::shared_ptr<Message>& msg) { handle_execute(msg); }
     );
-    
+
     msgbus_->register_handler(
         Endpoints::DATA_ENGINE_PROCESS,
         [this](const std::shared_ptr<Message>& msg) { handle_process(msg); }
     );
-    
+
     msgbus_->register_request_handler(
         Endpoints::DATA_ENGINE_REQUEST,
         [this](const std::shared_ptr<Request>& req) { return handle_request(req); }
     );
-    
+
     msgbus_->register_handler(
         Endpoints::DATA_ENGINE_RESPONSE,
         [this](const std::shared_ptr<Message>& msg) { handle_response(msg); }
     );
 }
 
-void DataEngine::start() {
-    Component::start();
+void DataEngine::on_start() {
     // TODO: Start all registered clients
 }
 
-void DataEngine::stop() {
-    Component::stop();
+void DataEngine::on_stop() {
     // TODO: Stop all registered clients
 }
 
@@ -87,13 +83,13 @@ LiveDataEngine::LiveDataEngine(MessageBus* msgbus, Cache* cache, Clock* clock,
     : DataEngine(msgbus, cache, clock, config), live_config_(config) {
 }
 
-void LiveDataEngine::start() {
-    DataEngine::start();
+void LiveDataEngine::on_start() {
+    DataEngine::on_start();
     // TODO: Initialize live-specific features
 }
 
-void LiveDataEngine::stop() {
-    DataEngine::stop();
+void LiveDataEngine::on_stop() {
+    DataEngine::on_stop();
     // TODO: Cleanup live-specific features
 }
 

@@ -1,9 +1,14 @@
 #pragma once
 
 #include "common.hpp"
+#include "message_bus.hpp"
 #include <string>
+#include <utility>
 
 namespace npcTrading {
+
+class Message;
+class MarketDataMessage;
 
 // ============================================================================
 // Instrument Specification
@@ -11,16 +16,19 @@ namespace npcTrading {
 
 class Instrument {
 public:
+    Instrument() = default;
     Instrument(InstrumentId id,
                const std::string& symbol,
                VenueId venue,
                double tick_size,
                double step_size,
                double min_quantity,
-               double max_quantity)
+               double max_quantity,
+               Timestamp timestamp = std::chrono::system_clock::now())
         : id_(id), symbol_(symbol), venue_(venue),
           tick_size_(tick_size), step_size_(step_size),
-          min_quantity_(min_quantity), max_quantity_(max_quantity) {}
+          min_quantity_(min_quantity), max_quantity_(max_quantity),
+          timestamp_(timestamp) {}
     
     InstrumentId id() const { return id_; }
     std::string symbol() const { return symbol_; }
@@ -29,6 +37,7 @@ public:
     double step_size() const { return step_size_; }
     double min_quantity() const { return min_quantity_; }
     double max_quantity() const { return max_quantity_; }
+    Timestamp timestamp() const { return timestamp_; }
     
 private:
     InstrumentId id_;
@@ -38,6 +47,7 @@ private:
     double step_size_;     // Minimum quantity increment
     double min_quantity_;  // Minimum order size
     double max_quantity_;  // Maximum order size
+    Timestamp timestamp_;
 };
 
 // ============================================================================
@@ -47,6 +57,7 @@ private:
 /// Quote tick (best bid/ask)
 class QuoteTick {
 public:
+    QuoteTick() = default;
     QuoteTick(InstrumentId instrument_id,
               Price bid_price,
               Price ask_price,
@@ -79,6 +90,7 @@ private:
 /// Trade tick (executed trade)
 class TradeTick {
 public:
+    TradeTick() = default;
     TradeTick(InstrumentId instrument_id,
               Price price,
               Quantity size,
@@ -107,6 +119,7 @@ private:
 /// Bar (OHLCV candle)
 class Bar {
 public:
+    Bar() = default;
     Bar(BarType bar_type,
         Price open,
         Price high,
@@ -150,6 +163,7 @@ struct OrderBookLevel {
 /// Order book (depth snapshot)
 class OrderBook {
 public:
+    OrderBook() = default;
     OrderBook(InstrumentId instrument_id,
               const std::vector<OrderBookLevel>& bids,
               const std::vector<OrderBookLevel>& asks,
@@ -172,6 +186,67 @@ private:
     std::vector<OrderBookLevel> bids_;
     std::vector<OrderBookLevel> asks_;
     Timestamp timestamp_;
+};
+
+// ============================================================================
+// Market Data Messages (for MessageBus transport)
+// ============================================================================
+
+class MarketDataMessage : public Message {
+public:
+    virtual void dispatch_to(class Actor& actor) const = 0;
+};
+
+class QuoteTickMessage : public MarketDataMessage {
+public:
+    explicit QuoteTickMessage(QuoteTick tick) : tick_(std::move(tick)) {}
+
+    Timestamp timestamp() const override { return tick_.timestamp(); }
+    std::string type() const override { return "QuoteTick"; }
+    const QuoteTick& tick() const { return tick_; }
+    void dispatch_to(class Actor& actor) const override;
+
+private:
+    QuoteTick tick_;
+};
+
+class TradeTickMessage : public MarketDataMessage {
+public:
+    explicit TradeTickMessage(TradeTick tick) : tick_(std::move(tick)) {}
+
+    Timestamp timestamp() const override { return tick_.timestamp(); }
+    std::string type() const override { return "TradeTick"; }
+    const TradeTick& trade() const { return tick_; }
+    void dispatch_to(class Actor& actor) const override;
+
+private:
+    TradeTick tick_;
+};
+
+class BarMessage : public MarketDataMessage {
+public:
+    explicit BarMessage(Bar bar) : bar_(std::move(bar)) {}
+
+    Timestamp timestamp() const override { return bar_.timestamp(); }
+    std::string type() const override { return "Bar"; }
+    const Bar& bar() const { return bar_; }
+    void dispatch_to(class Actor& actor) const override;
+
+private:
+    Bar bar_;
+};
+
+class OrderBookMessage : public MarketDataMessage {
+public:
+    explicit OrderBookMessage(OrderBook book) : book_(std::move(book)) {}
+
+    Timestamp timestamp() const override { return book_.timestamp(); }
+    std::string type() const override { return "OrderBook"; }
+    const OrderBook& book() const { return book_; }
+    void dispatch_to(class Actor& actor) const override;
+
+private:
+    OrderBook book_;
 };
 
 } // namespace npcTrading
