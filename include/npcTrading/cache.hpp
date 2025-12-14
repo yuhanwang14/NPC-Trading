@@ -265,6 +265,11 @@ public:
     void print_stats() const;
     
 private:
+    // Helper to build bar key (instrument|spec) - matches DataEngine::bar_key
+    static std::string bar_key(const BarType& bar_type) {
+        return bar_type.instrument_id() + "|" + bar_type.spec();
+    }
+    
     CacheConfig config_;
     
     // Order storage

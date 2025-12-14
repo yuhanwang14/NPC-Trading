@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -12,6 +13,12 @@
 #include <stdexcept>
 
 namespace npcTrading {
+
+/// Token returned from subscribe() to enable per-subscriber unsubscribe
+using SubscriptionToken = std::uint64_t;
+
+/// Invalid token constant
+constexpr SubscriptionToken INVALID_SUBSCRIPTION_TOKEN = 0;
 
 // Forward declarations
 class Message;
@@ -128,14 +135,21 @@ public:
      * @brief Subscribe to a topic
      * @param topic Topic name
      * @param handler Callback for published messages
+     * @return SubscriptionToken that can be used to unsubscribe just this handler
      */
-    void subscribe(const std::string& topic, MessageHandler handler);
+    SubscriptionToken subscribe(const std::string& topic, MessageHandler handler);
     
     /**
-     * @brief Unsubscribe from a topic
+     * @brief Unsubscribe a specific subscription by token
+     * @param token Token returned from subscribe()
+     */
+    void unsubscribe(SubscriptionToken token);
+    
+    /**
+     * @brief Unsubscribe all handlers from a topic
      * @param topic Topic name
      */
-    void unsubscribe(const std::string& topic);
+    void unsubscribe_all(const std::string& topic);
     
     /**
      * @brief Publish a message to all subscribers of a topic
@@ -174,8 +188,15 @@ private:
     std::unordered_map<std::string, MessageHandler> message_handlers_;
     std::unordered_map<std::string, RequestHandler> request_handlers_;
     
-    // Topic subscribers (pub/sub)
-    std::unordered_map<std::string, std::vector<MessageHandler>> subscribers_;
+    // Topic subscribers (pub/sub) - token-based for per-subscriber unsubscribe
+    // topic -> (token -> handler)
+    std::unordered_map<std::string, std::unordered_map<SubscriptionToken, MessageHandler>> subscribers_;
+    // token -> topic (reverse lookup for O(1) unsubscribe by token)
+    std::unordered_map<SubscriptionToken, std::string> token_to_topic_;
+    // Next token to assign
+    SubscriptionToken next_token_ = 1;
+    // Mutex for subscriber structures
+    mutable std::mutex sub_mutex_;
     
     // Message queue for async processing
     std::deque<QueuedMessage> message_queue_;
@@ -196,6 +217,7 @@ namespace Endpoints {
     // Data Engine
     constexpr const char* DATA_ENGINE_EXECUTE = "DataEngine.execute";
     constexpr const char* DATA_ENGINE_PROCESS = "DataEngine.process";
+    constexpr const char* DATA_ENGINE_PROCESS_HISTORICAL = "DataEngine.process_historical";
     constexpr const char* DATA_ENGINE_REQUEST = "DataEngine.request";
     constexpr const char* DATA_ENGINE_RESPONSE = "DataEngine.response";
     

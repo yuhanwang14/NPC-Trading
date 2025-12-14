@@ -258,13 +258,18 @@ TEST_F(MessageBusTest, MultipleSubscribers) {
     int subscriber1_count = 0;
     int subscriber2_count = 0;
     
-    bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
+    SubscriptionToken token1 = bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
         subscriber1_count++;
     });
     
-    bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
+    SubscriptionToken token2 = bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
         subscriber2_count++;
     });
+    
+    // Tokens should be different
+    EXPECT_NE(token1, INVALID_SUBSCRIPTION_TOKEN);
+    EXPECT_NE(token2, INVALID_SUBSCRIPTION_TOKEN);
+    EXPECT_NE(token1, token2);
     
     bus_->start();
     
@@ -277,7 +282,33 @@ TEST_F(MessageBusTest, MultipleSubscribers) {
     EXPECT_EQ(subscriber2_count, 2);
 }
 
-TEST_F(MessageBusTest, Unsubscribe) {
+TEST_F(MessageBusTest, UnsubscribeByToken) {
+    int call_count = 0;
+    
+    SubscriptionToken token = bus_->subscribe("topic", [&](const std::shared_ptr<Message>&) {
+        call_count++;
+    });
+    
+    EXPECT_NE(token, INVALID_SUBSCRIPTION_TOKEN);
+    
+    bus_->start();
+    
+    bus_->publish("topic", std::make_shared<TestMessage>("Test 1"));
+    bus_->run();
+    
+    EXPECT_EQ(call_count, 1);
+    
+    // Unsubscribe by token
+    bus_->unsubscribe(token);
+    
+    bus_->publish("topic", std::make_shared<TestMessage>("Test 2"));
+    bus_->run();
+    
+    // Should not be called again
+    EXPECT_EQ(call_count, 1);
+}
+
+TEST_F(MessageBusTest, UnsubscribeAllFromTopic) {
     int call_count = 0;
     
     bus_->subscribe("topic", [&](const std::shared_ptr<Message>&) {
@@ -291,14 +322,47 @@ TEST_F(MessageBusTest, Unsubscribe) {
     
     EXPECT_EQ(call_count, 1);
     
-    // Unsubscribe
-    bus_->unsubscribe("topic");
+    // Unsubscribe all from topic
+    bus_->unsubscribe_all("topic");
     
     bus_->publish("topic", std::make_shared<TestMessage>("Test 2"));
     bus_->run();
     
     // Should not be called again
     EXPECT_EQ(call_count, 1);
+}
+
+TEST_F(MessageBusTest, UnsubscribeOneOfMultiple) {
+    int subscriber1_count = 0;
+    int subscriber2_count = 0;
+    
+    SubscriptionToken token1 = bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
+        subscriber1_count++;
+    });
+    
+    SubscriptionToken token2 = bus_->subscribe("events", [&](const std::shared_ptr<Message>&) {
+        subscriber2_count++;
+    });
+    
+    EXPECT_NE(token1, token2);
+    
+    bus_->start();
+    
+    bus_->publish("events", std::make_shared<TestMessage>("Event 1"));
+    bus_->run();
+    
+    EXPECT_EQ(subscriber1_count, 1);
+    EXPECT_EQ(subscriber2_count, 1);
+    
+    // Unsubscribe only subscriber1
+    bus_->unsubscribe(token1);
+    
+    bus_->publish("events", std::make_shared<TestMessage>("Event 2"));
+    bus_->run();
+    
+    // Subscriber1 should not be called, but subscriber2 should be
+    EXPECT_EQ(subscriber1_count, 1);
+    EXPECT_EQ(subscriber2_count, 2);
 }
 
 TEST_F(MessageBusTest, PublishNullMessage) {

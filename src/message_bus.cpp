@@ -100,18 +100,54 @@ std::shared_ptr<Response> MessageBus::request(const std::string& endpoint,
 // Pub/Sub
 // ============================================================================
 
-void MessageBus::subscribe(const std::string& topic, MessageHandler handler) {
+SubscriptionToken MessageBus::subscribe(const std::string& topic, MessageHandler handler) {
     if (topic.empty()) {
         throw std::invalid_argument("Topic name cannot be empty");
     }
     if (!handler) {
         throw std::invalid_argument("Handler cannot be null");
     }
-    subscribers_[topic].push_back(handler);
+    
+    std::lock_guard<std::mutex> lock(sub_mutex_);
+    SubscriptionToken token = next_token_++;
+    subscribers_[topic][token] = handler;
+    token_to_topic_[token] = topic;
+    return token;
 }
 
-void MessageBus::unsubscribe(const std::string& topic) {
-    subscribers_.erase(topic);
+void MessageBus::unsubscribe(SubscriptionToken token) {
+    if (token == INVALID_SUBSCRIPTION_TOKEN) {
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(sub_mutex_);
+    auto topic_it = token_to_topic_.find(token);
+    if (topic_it == token_to_topic_.end()) {
+        return;  // Token not found
+    }
+    
+    const std::string& topic = topic_it->second;
+    auto subs_it = subscribers_.find(topic);
+    if (subs_it != subscribers_.end()) {
+        subs_it->second.erase(token);
+        // Clean up empty topic entries
+        if (subs_it->second.empty()) {
+            subscribers_.erase(subs_it);
+        }
+    }
+    token_to_topic_.erase(topic_it);
+}
+
+void MessageBus::unsubscribe_all(const std::string& topic) {
+    std::lock_guard<std::mutex> lock(sub_mutex_);
+    auto subs_it = subscribers_.find(topic);
+    if (subs_it != subscribers_.end()) {
+        // Remove all tokens for this topic from reverse map
+        for (const auto& [token, handler] : subs_it->second) {
+            token_to_topic_.erase(token);
+        }
+        subscribers_.erase(subs_it);
+    }
 }
 
 void MessageBus::publish(const std::string& topic, std::shared_ptr<Message> message) {
@@ -220,12 +256,20 @@ void MessageBus::process_message(const QueuedMessage& msg) {
     
     try {
         if (msg.is_publish) {
-            // Publish to all subscribers
-            auto it = subscribers_.find(msg.endpoint_or_topic);
-            if (it != subscribers_.end()) {
-                for (const auto& handler : it->second) {
-                    handler(msg.message);
+            // Publish to all subscribers - copy handlers to avoid holding lock during callbacks
+            std::vector<MessageHandler> handlers;
+            {
+                std::lock_guard<std::mutex> lock(sub_mutex_);
+                auto it = subscribers_.find(msg.endpoint_or_topic);
+                if (it != subscribers_.end()) {
+                    handlers.reserve(it->second.size());
+                    for (const auto& [token, handler] : it->second) {
+                        handlers.push_back(handler);
+                    }
                 }
+            }
+            for (const auto& handler : handlers) {
+                handler(msg.message);
             }
         } else {
             // Send to single endpoint

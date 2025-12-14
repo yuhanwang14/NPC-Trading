@@ -167,7 +167,8 @@ const TradeTick* Cache::trade_tick(const InstrumentId& instrument_id) const {
 }
 
 const Bar* Cache::bar(const BarType& bar_type) const {
-    auto it = bars_.find(bar_type.spec());
+    auto key = bar_key(bar_type);
+    auto it = bars_.find(key);
     return (it != bars_.end()) ? &(it->second) : nullptr;
 }
 
@@ -208,13 +209,13 @@ void Cache::add_trade_tick(const TradeTick& tick) {
 }
 
 void Cache::add_bar(const Bar& bar) {
-    auto spec = bar.bar_type().spec();
-    if (is_stale_and_update(latest_bar_ts_, spec, bar.timestamp())) {
+    auto key = bar_key(bar.bar_type());
+    if (is_stale_and_update(latest_bar_ts_, key, bar.timestamp())) {
         return;
     }
-    bars_[spec] = bar;
+    bars_[key] = bar;
     if (config_.bar_capacity > 0) {
-        auto [it, inserted] = bar_history_.try_emplace(spec, config_.bar_capacity);
+        auto [it, inserted] = bar_history_.try_emplace(key, config_.bar_capacity);
         it->second.push(bar);
     }
 }
@@ -302,8 +303,8 @@ std::vector<TradeTick> Cache::recent_trades(const InstrumentId& instrument_id, s
 }
 
 std::vector<Bar> Cache::recent_bars(const BarType& bar_type, size_t n) const {
-    auto spec = bar_type.spec();
-    auto it = bar_history_.find(spec);
+    auto key = bar_key(bar_type);
+    auto it = bar_history_.find(key);
     if (it == bar_history_.end()) {
         return {};
     }
