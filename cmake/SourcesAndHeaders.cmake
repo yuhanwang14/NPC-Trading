@@ -13,6 +13,13 @@ set(sources
     src/model.cpp
 )
 
+# Conditionally add Binance client sources when enabled
+if(${PROJECT_NAME}_ENABLE_BINANCE)
+    list(APPEND sources
+        src/binance/binance_data_client.cpp
+    )
+endif()
+
 set(exe_sources
 		src/main.cpp
 		${sources}
@@ -33,8 +40,15 @@ set(headers
     include/npcTrading/model.hpp
 )
 
+# Binance header is always available (Pimpl pattern keeps Boost out of public API)
+list(APPEND headers
+    include/npcTrading/binance/binance_data_client.hpp
+)
+
 set(test_sources
   src/cache_test.cpp
   src/message_bus_test.cpp
   src/clock_test.cpp
+  src/data_engine_test.cpp
+  src/actor_test.cpp
 )

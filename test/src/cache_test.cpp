@@ -128,6 +128,52 @@ TEST(CacheTest, InstrumentAndAccountTimeFiltering) {
     EXPECT_EQ(acc->timestamp(), ts(20));
 }
 
+TEST(CacheTest, BarKeyNoCollisionBetweenInstruments) {
+    // Regression test: two instruments with the same spec should not collide
+    CacheConfig cfg;
+    cfg.bar_capacity = 5;
+    Cache cache(cfg);
+    
+    BarType btc_1m("BTCUSDT", "1m");
+    BarType eth_1m("ETHUSDT", "1m");  // Same spec, different instrument
+    
+    // Add bars for BTCUSDT
+    cache.add_bar(Bar(btc_1m, Price(50000), Price(51000), Price(49000), Price(50500), Quantity(100), ts(10)));
+    cache.add_bar(Bar(btc_1m, Price(50500), Price(52000), Price(50000), Price(51500), Quantity(120), ts(20)));
+    
+    // Add bars for ETHUSDT with same spec
+    cache.add_bar(Bar(eth_1m, Price(2000), Price(2100), Price(1900), Price(2050), Quantity(500), ts(10)));
+    cache.add_bar(Bar(eth_1m, Price(2050), Price(2200), Price(2000), Price(2150), Quantity(600), ts(20)));
+    
+    // Verify latest bars are distinct per instrument
+    const Bar* btc_latest = cache.bar(btc_1m);
+    const Bar* eth_latest = cache.bar(eth_1m);
+    
+    ASSERT_NE(btc_latest, nullptr);
+    ASSERT_NE(eth_latest, nullptr);
+    
+    // Check that BTC bar has BTC prices
+    EXPECT_DOUBLE_EQ(btc_latest->close().as_double(), 51500.0);
+    EXPECT_EQ(btc_latest->bar_type().instrument_id(), "BTCUSDT");
+    
+    // Check that ETH bar has ETH prices  
+    EXPECT_DOUBLE_EQ(eth_latest->close().as_double(), 2150.0);
+    EXPECT_EQ(eth_latest->bar_type().instrument_id(), "ETHUSDT");
+    
+    // Verify histories are also distinct
+    auto btc_history = cache.recent_bars(btc_1m, 5);
+    auto eth_history = cache.recent_bars(eth_1m, 5);
+    
+    ASSERT_EQ(btc_history.size(), 2u);
+    ASSERT_EQ(eth_history.size(), 2u);
+    
+    EXPECT_DOUBLE_EQ(btc_history[0].close().as_double(), 50500.0);
+    EXPECT_DOUBLE_EQ(btc_history[1].close().as_double(), 51500.0);
+    
+    EXPECT_DOUBLE_EQ(eth_history[0].close().as_double(), 2050.0);
+    EXPECT_DOUBLE_EQ(eth_history[1].close().as_double(), 2150.0);
+}
+
 TEST(CacheTest, ClearResetsAllStoredData) {
     CacheConfig cfg;
     cfg.trade_capacity = 2;

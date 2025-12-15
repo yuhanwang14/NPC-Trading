@@ -1,12 +1,15 @@
 #pragma once
 
+#include "cache.hpp"
 #include "common.hpp"
 #include "component.hpp"
 #include "market_data.hpp"
 #include "message_bus.hpp"
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace npcTrading {
 
@@ -195,7 +198,46 @@ public:
     virtual ~DataResponse() = default;
 };
 
-// TODO: Define specific response types
+/**
+ * @brief Response containing an instrument specification
+ */
+class InstrumentResponse : public DataResponse {
+public:
+    explicit InstrumentResponse(std::optional<Instrument> instrument = std::nullopt,
+                                std::string error = "")
+        : instrument_(std::move(instrument)), error_(std::move(error)) {}
+    
+    const std::optional<Instrument>& instrument() const { return instrument_; }
+    const std::string& error() const { return error_; }
+    bool has_error() const { return !error_.empty(); }
+    
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "InstrumentResponse"; }
+    
+private:
+    std::optional<Instrument> instrument_;
+    std::string error_;
+};
+
+/**
+ * @brief Response containing a vector of bars
+ */
+class BarsResponse : public DataResponse {
+public:
+    explicit BarsResponse(std::vector<Bar> bars = {}, std::string error = "")
+        : bars_(std::move(bars)), error_(std::move(error)) {}
+    
+    const std::vector<Bar>& bars() const { return bars_; }
+    const std::string& error() const { return error_; }
+    bool has_error() const { return !error_.empty(); }
+    
+    Timestamp timestamp() const override { return std::chrono::system_clock::now(); }
+    std::string type() const override { return "BarsResponse"; }
+    
+private:
+    std::vector<Bar> bars_;
+    std::string error_;
+};
 
 // ============================================================================
 // DataEngine Configuration
@@ -239,9 +281,9 @@ public:
     virtual void subscribe_order_book(const InstrumentId& instrument_id, int depth = 10) = 0;
     virtual void unsubscribe_order_book(const InstrumentId& instrument_id) = 0;
     
-    // Request methods
-    virtual void request_instrument(const InstrumentId& instrument_id) = 0;
-    virtual void request_bars(const BarType& bar_type, Timestamp start, Timestamp end) = 0;
+    // Request methods (synchronous-returning)
+    virtual std::optional<Instrument> request_instrument(const InstrumentId& instrument_id) = 0;
+    virtual std::vector<Bar> request_bars(const BarType& bar_type, Timestamp start, Timestamp end) = 0;
     
     // Connection management
     virtual void connect() = 0;
@@ -317,8 +359,45 @@ private:
     // Client routing
     std::unordered_map<ClientId, std::shared_ptr<DataClient>> clients_;
     std::unordered_map<VenueId, ClientId> venue_to_client_;
+    ClientId default_client_id_;  // First registered client becomes default
     
-    // TODO: Add subscription tracking
+    // ========================================================================
+    // Subscription tracking (refcounts + pinned clients)
+    // Note: Handlers run on the MessageBus thread only; no mutex needed.
+    // ========================================================================
+    
+    // Quote subscriptions
+    std::unordered_map<InstrumentId, int> quote_refcount_;
+    std::unordered_map<InstrumentId, ClientId> quote_client_;
+    
+    // Trade subscriptions
+    std::unordered_map<InstrumentId, int> trade_refcount_;
+    std::unordered_map<InstrumentId, ClientId> trade_client_;
+    
+    // Order book subscriptions (with max-depth tracking)
+    std::unordered_map<InstrumentId, int> book_refcount_;
+    std::unordered_map<InstrumentId, ClientId> book_client_;
+    std::unordered_map<InstrumentId, int> book_active_depth_;  // Current max depth
+    std::unordered_map<InstrumentId, std::unordered_map<int, int>> book_depth_counts_;  // depth -> subscriber count
+    
+    // Bar subscriptions (key = instrument|spec)
+    std::unordered_map<std::string, int> bar_refcount_;
+    std::unordered_map<std::string, ClientId> bar_client_;
+    
+    // ========================================================================
+    // Key helpers
+    // ========================================================================
+    
+    static std::string bar_key(const BarType& bar_type) {
+        return bar_type.instrument_id() + "|" + bar_type.spec();
+    }
+    
+    // ========================================================================
+    // Client selection helper (route-by-venue when possible)
+    // ========================================================================
+    
+    ClientId select_client(const InstrumentId& instrument_id, const ClientId& requested_client_id) const;
+    
     // TODO: Add bar builders for time-based aggregation
 };
 

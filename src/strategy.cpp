@@ -19,6 +19,15 @@ void Actor::subscribe_bars(const BarType& bar_type) {
     if (!bar_subscriptions_.insert(key).second) {
         return; // already subscribed
     }
+    
+    // Subscribe to MessageBus topic for this bar type
+    std::string topic = bar_topic(key.instrument_id, key.spec);
+    SubscriptionToken token = msgbus_->subscribe(topic, [this](const std::shared_ptr<Message>& msg) {
+        handle_message(msg);
+    });
+    bar_tokens_[key] = token;
+    
+    // Tell DataEngine to subscribe with the data client
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<SubscribeBars>(bar_type));
 }
@@ -29,6 +38,14 @@ void Actor::unsubscribe_bars(const BarType& bar_type) {
         return;
     }
     bar_subscriptions_.erase(key);
+    
+    // Unsubscribe from MessageBus topic
+    auto it = bar_tokens_.find(key);
+    if (it != bar_tokens_.end()) {
+        msgbus_->unsubscribe(it->second);
+        bar_tokens_.erase(it);
+    }
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<UnsubscribeBars>(bar_type));
 }
@@ -41,6 +58,14 @@ void Actor::subscribe_quotes(const InstrumentId& instrument_id) {
     if (!quote_subscriptions_.insert(instrument_id).second) {
         return;
     }
+    
+    // Subscribe to MessageBus topic for quotes
+    std::string topic = quote_topic(instrument_id);
+    SubscriptionToken token = msgbus_->subscribe(topic, [this](const std::shared_ptr<Message>& msg) {
+        handle_message(msg);
+    });
+    quote_tokens_[instrument_id] = token;
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<SubscribeQuotes>(instrument_id));
 }
@@ -50,6 +75,14 @@ void Actor::unsubscribe_quotes(const InstrumentId& instrument_id) {
         return;
     }
     quote_subscriptions_.erase(instrument_id);
+    
+    // Unsubscribe from MessageBus topic
+    auto it = quote_tokens_.find(instrument_id);
+    if (it != quote_tokens_.end()) {
+        msgbus_->unsubscribe(it->second);
+        quote_tokens_.erase(it);
+    }
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<UnsubscribeQuotes>(instrument_id));
 }
@@ -62,6 +95,14 @@ void Actor::subscribe_trades(const InstrumentId& instrument_id) {
     if (!trade_subscriptions_.insert(instrument_id).second) {
         return;
     }
+    
+    // Subscribe to MessageBus topic for trades
+    std::string topic = trade_topic(instrument_id);
+    SubscriptionToken token = msgbus_->subscribe(topic, [this](const std::shared_ptr<Message>& msg) {
+        handle_message(msg);
+    });
+    trade_tokens_[instrument_id] = token;
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<SubscribeTrades>(instrument_id));
 }
@@ -71,6 +112,14 @@ void Actor::unsubscribe_trades(const InstrumentId& instrument_id) {
         return;
     }
     trade_subscriptions_.erase(instrument_id);
+    
+    // Unsubscribe from MessageBus topic
+    auto it = trade_tokens_.find(instrument_id);
+    if (it != trade_tokens_.end()) {
+        msgbus_->unsubscribe(it->second);
+        trade_tokens_.erase(it);
+    }
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<UnsubscribeTrades>(instrument_id));
 }
@@ -87,6 +136,14 @@ void Actor::subscribe_order_book(const InstrumentId& instrument_id, int depth) {
     if (!orderbook_subscriptions_.insert(instrument_id).second) {
         return;
     }
+    
+    // Subscribe to MessageBus topic for order book
+    std::string topic = book_topic(instrument_id);
+    SubscriptionToken token = msgbus_->subscribe(topic, [this](const std::shared_ptr<Message>& msg) {
+        handle_message(msg);
+    });
+    book_tokens_[instrument_id] = token;
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<SubscribeOrderBook>(instrument_id, depth));
 }
@@ -96,6 +153,14 @@ void Actor::unsubscribe_order_book(const InstrumentId& instrument_id) {
         return;
     }
     orderbook_subscriptions_.erase(instrument_id);
+    
+    // Unsubscribe from MessageBus topic
+    auto it = book_tokens_.find(instrument_id);
+    if (it != book_tokens_.end()) {
+        msgbus_->unsubscribe(it->second);
+        book_tokens_.erase(it);
+    }
+    
     msgbus_->send(Endpoints::DATA_ENGINE_EXECUTE,
                   std::make_shared<UnsubscribeOrderBook>(instrument_id));
 }

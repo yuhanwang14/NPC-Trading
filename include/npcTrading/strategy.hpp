@@ -151,12 +151,32 @@ protected:
     
     // Internal event dispatcher
     void handle_message(const std::shared_ptr<Message>& msg);
+    
+    // Helper to build topic names (matching DataEngine)
+    static std::string quote_topic(const InstrumentId& id) {
+        return "MarketData.Quote." + id;
+    }
+    static std::string trade_topic(const InstrumentId& id) {
+        return "MarketData.Trade." + id;
+    }
+    static std::string book_topic(const InstrumentId& id) {
+        return "MarketData.Book." + id;
+    }
+    static std::string bar_topic(const InstrumentId& id, const std::string& spec) {
+        return "MarketData.Bar." + id + "|" + spec;
+    }
 
     // Track subscriptions to avoid duplicates
     std::unordered_set<BarKey, BarKeyHash> bar_subscriptions_;
     std::unordered_set<InstrumentId> quote_subscriptions_;
     std::unordered_set<InstrumentId> trade_subscriptions_;
     std::unordered_set<InstrumentId> orderbook_subscriptions_;
+    
+    // MessageBus topic subscription tokens for per-subscriber cleanup
+    std::unordered_map<InstrumentId, SubscriptionToken> quote_tokens_;
+    std::unordered_map<InstrumentId, SubscriptionToken> trade_tokens_;
+    std::unordered_map<InstrumentId, SubscriptionToken> book_tokens_;
+    std::unordered_map<BarKey, SubscriptionToken, BarKeyHash> bar_tokens_;
 };
 
 // ============================================================================

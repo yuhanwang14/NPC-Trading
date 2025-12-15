@@ -70,6 +70,20 @@ include(cmake/Conan.cmake)
 include(cmake/Vcpkg.cmake)
 
 #
+# Optional Binance client (requires Boost.Beast + OpenSSL)
+#
+
+option(${PROJECT_NAME}_ENABLE_BINANCE "Build BinanceDataClient (requires Boost.Beast and OpenSSL)" OFF)
+
+if(${PROJECT_NAME}_ENABLE_BINANCE)
+    message(STATUS "BinanceDataClient enabled - finding Boost and OpenSSL...")
+    find_package(Boost REQUIRED COMPONENTS json)
+    find_package(OpenSSL REQUIRED)
+    message(STATUS "Found Boost: ${Boost_VERSION}")
+    message(STATUS "Found OpenSSL: ${OPENSSL_VERSION}")
+endif()
+
+#
 # Create library, setup header and source files
 #
 
@@ -189,6 +203,31 @@ include(cmake/Doxygen.cmake)
 #      dependency1 ...
 #  )
 #endif()
+
+# Link Boost and OpenSSL when Binance client is enabled
+if(${PROJECT_NAME}_ENABLE_BINANCE)
+  target_link_libraries(
+    ${PROJECT_NAME}
+    PUBLIC
+      Boost::json
+      OpenSSL::SSL
+      OpenSSL::Crypto
+  )
+  target_compile_definitions(${PROJECT_NAME} PUBLIC NPCTRADING_BINANCE_ENABLED=1)
+  
+  if(${PROJECT_NAME}_BUILD_EXECUTABLE AND ${PROJECT_NAME}_ENABLE_UNIT_TESTING)
+    target_link_libraries(
+      ${PROJECT_NAME}_LIB
+      PUBLIC
+        Boost::json
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+    target_compile_definitions(${PROJECT_NAME}_LIB PUBLIC NPCTRADING_BINANCE_ENABLED=1)
+  endif()
+  
+  message(STATUS "Linked Boost.Beast and OpenSSL for BinanceDataClient")
+endif()
 
 # For Windows, it is necessary to link with the MultiThreaded library.
 # Depending on how the rest of the project's dependencies are linked, it might be necessary
