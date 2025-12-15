@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 
+# Silence dev warning on newer CMake versions where the legacy FindBoost module is removed.
+# We use Boost's package config (BoostConfig.cmake) via find_package(Boost ...).
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 #
 # Project details
 #
@@ -70,14 +76,20 @@ include(cmake/Conan.cmake)
 include(cmake/Vcpkg.cmake)
 
 #
-# Optional Binance client (requires Boost.Beast + OpenSSL)
+# Binance client (requires Boost.Beast + OpenSSL)
 #
 
-option(${PROJECT_NAME}_ENABLE_BINANCE "Build BinanceDataClient (requires Boost.Beast and OpenSSL)" OFF)
+# Default ON: this project expects the Binance client to be built unless explicitly disabled.
+option(${PROJECT_NAME}_ENABLE_BINANCE "Build BinanceDataClient (requires Boost.Beast and OpenSSL)" ON)
 
 if(${PROJECT_NAME}_ENABLE_BINANCE)
     message(STATUS "BinanceDataClient enabled - finding Boost and OpenSSL...")
-    find_package(Boost REQUIRED COMPONENTS json)
+    # BinanceDataClient uses Boost.Asio + Boost.Beast (header-only) which depend on Boost headers
+    # and Boost.System for error_code.
+    #
+    # Note: On some platforms, linking only Boost::json may not propagate the Boost include
+    # directory, causing `#include <boost/asio.hpp>` to fail. Linking Boost::headers fixes that.
+    find_package(Boost REQUIRED COMPONENTS json system)
     find_package(OpenSSL REQUIRED)
     message(STATUS "Found Boost: ${Boost_VERSION}")
     message(STATUS "Found OpenSSL: ${OPENSSL_VERSION}")
@@ -209,7 +221,9 @@ if(${PROJECT_NAME}_ENABLE_BINANCE)
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
+      Boost::headers
       Boost::json
+      Boost::system
       OpenSSL::SSL
       OpenSSL::Crypto
   )
@@ -219,7 +233,9 @@ if(${PROJECT_NAME}_ENABLE_BINANCE)
     target_link_libraries(
       ${PROJECT_NAME}_LIB
       PUBLIC
+        Boost::headers
         Boost::json
+        Boost::system
         OpenSSL::SSL
         OpenSSL::Crypto
     )
