@@ -19,6 +19,16 @@ void RiskEngine::on_initialize() {
         Endpoints::RISK_ENGINE_PROCESS,
         [this](const std::shared_ptr<Message>& msg) { handle_process(msg); }
     );
+    
+    log_info("RiskEngine initialized (bypass_risk=" + std::string(config_.bypass_risk ? "true" : "false") + ")");
+}
+
+void RiskEngine::on_start() {
+    log_info("RiskEngine started with trading_state=" + to_string(trading_state_));
+}
+
+void RiskEngine::on_stop() {
+    log_info("RiskEngine stopped");
 }
 
 void RiskEngine::set_trading_state(TradingState state) {
@@ -27,15 +37,23 @@ void RiskEngine::set_trading_state(TradingState state) {
 }
 
 void RiskEngine::handle_execute(const std::shared_ptr<Message>& msg) {
-    // TODO: Validate and forward or deny
     std::string rejection_reason;
     
     const TradingCommand* command = dynamic_cast<const TradingCommand*>(msg.get());
-    if (command && validate_command(command, rejection_reason)) {
+    if (!command) {
+        log_error("Received non-TradingCommand message");
+        return;
+    }
+    
+    if (validate_command(command, rejection_reason)) {
         forward_to_execution(msg);
     } else {
-        // TODO: Send denial event
-        log_warning("Command denied: " + rejection_reason);
+        // Extract order from command and deny
+        if (auto submit = dynamic_cast<const SubmitOrder*>(command)) {
+            deny_order(submit->order(), rejection_reason);
+        } else {
+            log_warning("Command denied (non-submit): " + rejection_reason);
+        }
     }
 }
 
@@ -97,7 +115,18 @@ bool RiskEngine::check_reduce_only(const Order* order, std::string& reason) {
 }
 
 void RiskEngine::deny_order(Order* order, const std::string& reason) {
-    // TODO: Create and send OrderDenied event
+    if (!order) return;
+    
+    log_warning("Order denied: " + order->order_id() + " - " + reason);
+    
+    // Create OrderDenied event and send to ExecutionEngine for processing
+    auto denied = std::make_shared<OrderDenied>(
+        std::make_shared<Order>(*order),
+        reason,
+        std::chrono::system_clock::now()
+    );
+    
+    msgbus_->send(Endpoints::EXEC_ENGINE_PROCESS, denied);
 }
 
 void RiskEngine::forward_to_execution(const std::shared_ptr<Message>& msg) {
