@@ -267,6 +267,26 @@ public:
     ~ExecutionEngine() override = default;
     
     // ========================================================================
+    // Client Management
+    // ========================================================================
+    
+    /**
+     * @brief Register an execution client for order routing
+     * @param client The execution client to register
+     */
+    void register_client(std::shared_ptr<ExecutionClient> client);
+    
+    /**
+     * @brief Get execution client by client ID
+     */
+    ExecutionClient* get_client(const ClientId& client_id) const;
+    
+    /**
+     * @brief Get execution client for a venue
+     */
+    ExecutionClient* get_client_for_venue(const VenueId& venue) const;
+    
+    // ========================================================================
     // Component Lifecycle
     // ========================================================================
     
@@ -274,14 +294,6 @@ protected:
     void on_initialize() override;
     void on_start() override;
     void on_stop() override;
-    
-    // ========================================================================
-    // Client Management
-    // ========================================================================
-    
-    void register_client(std::shared_ptr<ExecutionClient> client);
-    ExecutionClient* get_client(const ClientId& client_id) const;
-    ExecutionClient* get_client_for_venue(const VenueId& venue) const;
     
     // ========================================================================
     // Message Handlers

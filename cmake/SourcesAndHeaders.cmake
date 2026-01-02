@@ -17,6 +17,7 @@ set(sources
 if(${PROJECT_NAME}_ENABLE_BINANCE)
     list(APPEND sources
         src/binance/binance_data_client.cpp
+        src/binance/binance_execution_client.cpp
     )
 endif()
 
@@ -40,9 +41,10 @@ set(headers
     include/npcTrading/model.hpp
 )
 
-# Binance header is always available (Pimpl pattern keeps Boost out of public API)
+# Binance headers are always available (Pimpl pattern keeps Boost out of public API)
 list(APPEND headers
     include/npcTrading/binance/binance_data_client.hpp
+    include/npcTrading/binance/binance_execution_client.hpp
 )
 
 set(test_sources

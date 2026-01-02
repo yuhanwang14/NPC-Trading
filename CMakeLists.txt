@@ -431,3 +431,31 @@ if(${PROJECT_NAME}_ENABLE_UNIT_TESTING)
   message(STATUS "Build unit tests for the project. Tests should always be found in the test folder\n")
   add_subdirectory(test)
 endif()
+
+#
+# Example executables
+#
+
+# Binance place order CLI tool
+if(${PROJECT_NAME}_ENABLE_BINANCE)
+  add_executable(${PROJECT_NAME}_binance_place_order
+    examples/binance_place_order.cpp
+  )
+  
+  target_link_libraries(${PROJECT_NAME}_binance_place_order
+    PRIVATE
+      ${PROJECT_NAME}
+  )
+  
+  target_include_directories(${PROJECT_NAME}_binance_place_order
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  
+  set_target_properties(${PROJECT_NAME}_binance_place_order
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}"
+  )
+  
+  message(STATUS "Added Binance place order CLI tool")
+endif()
