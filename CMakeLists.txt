@@ -458,4 +458,27 @@ if(${PROJECT_NAME}_ENABLE_BINANCE)
   )
   
   message(STATUS "Added Binance place order CLI tool")
+  
+  # Monitoring dashboard executable
+  add_executable(${PROJECT_NAME}_dashboard
+    src/monitoring/dashboard_main.cpp
+  )
+  
+  target_link_libraries(${PROJECT_NAME}_dashboard
+    PRIVATE
+      ${PROJECT_NAME}
+  )
+  
+  target_include_directories(${PROJECT_NAME}_dashboard
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  
+  set_target_properties(${PROJECT_NAME}_dashboard
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}"
+  )
+  
+  message(STATUS "Added monitoring dashboard executable")
 endif()
+
