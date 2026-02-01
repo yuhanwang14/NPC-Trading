@@ -45,20 +45,27 @@ enum class OrderSide {
     SELL
 };
 
-/// Order type
+/// Order type (Binance-compatible)
 enum class OrderType {
-    MARKET,
-    LIMIT,
-    STOP_MARKET,
-    STOP_LIMIT
+    MARKET,              // Market order - immediate execution at best available price
+    LIMIT,               // Limit order - execute at specified price or better
+    STOP_MARKET,         // Stop-loss market order - triggers market order at stop price
+    STOP_LIMIT,          // Stop-loss limit order - triggers limit order at stop price
+    STOP_LOSS,           // Stop-loss order (alias for STOP_MARKET for clarity)
+    TAKE_PROFIT,         // Take-profit market order
+    TAKE_PROFIT_LIMIT,   // Take-profit limit order
+    LIMIT_MAKER,         // Post-only limit order (maker-only, rejected if would take)
+    TRAILING_STOP_MARKET // Trailing stop-loss based on percentage/amount
+    // Note: OCO (One-Cancels-Other) is handled as a special order combination
 };
 
 /// Time in force
 enum class TimeInForce {
-    GTC,  // Good Till Cancel
-    IOC,  // Immediate Or Cancel
-    FOK,  // Fill Or Kill
-    GTD   // Good Till Date
+    GTC,  // Good Till Cancel - order stays active until filled or canceled
+    IOC,  // Immediate Or Cancel - fill immediately (partial ok), cancel remainder
+    FOK,  // Fill Or Kill - fill completely immediately or cancel entire order
+    GTD,  // Good Till Date - active until specified date/time
+    GTX   // Good Till Crossing - post-only, rejected if immediately executable (Maker-only)
 };
 
 /// Order status
