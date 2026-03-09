@@ -55,7 +55,7 @@ namespace npcTrading
       // ========================================================================
       std::atomic<uint64_t> risk_checks_passed{ 0 };
       std::atomic<uint64_t> risk_checks_failed{ 0 };
-      std::atomic<int> trading_state{ 2 };  // 0=HALTED, 1=REDUCING, 2=ACTIVE
+      std::atomic<int> trading_state{ 0 };  // 0=ACTIVE, 1=HALTED, 2=REDUCING (matches TradingState enum)
 
       // ========================================================================
       // Component States (matching ComponentState enum)
@@ -104,7 +104,7 @@ namespace npcTrading
         orders_pending.store(0);
         risk_checks_passed.store(0);
         risk_checks_failed.store(0);
-        trading_state.store(2);
+        trading_state.store(0);
         data_engine_state.store(0);
         exec_engine_state.store(0);
         risk_engine_state.store(0);
@@ -146,9 +146,9 @@ namespace npcTrading
     {
       switch (state)
       {
-        case 0: return "HALTED";
-        case 1: return "REDUCING";
-        case 2: return "ACTIVE";
+        case 0: return "ACTIVE";
+        case 1: return "HALTED";
+        case 2: return "REDUCING";
         default: return "UNKNOWN";
       }
     }
