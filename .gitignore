@@ -372,3 +372,9 @@ MigrationBackup/
 
 # Temporal folder for testing
 tmp/
+.gitnexus
+
+# Claude Code
+.claude/
+CLAUDE.md
+AGENTS.md

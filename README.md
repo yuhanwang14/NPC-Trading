@@ -259,13 +259,13 @@ npcTrading/
 
 ## TODO — Remaining Implementation Work
 
-- Implement `Position::apply_fill()` with real P&L calculation (currently stub-with-guard)
-- Implement `RiskEngine` validation methods — all checks currently deny when `bypass_risk=false`
-- Implement `ExecutionEngine` position tracking (`handle_fill`, `update_position`)
-- Implement `ExecAlgorithm` child order spawning (`spawn_market_order`, `spawn_limit_order`)
-- Add proper decimal types for `Price`/`Quantity` (replace `double` to avoid float precision issues)
-- Path traversal hardening in `dashboard_server.cpp` file serving
-- Reduce compiler warnings (~16 remaining, mostly unused parameters in stubs)
+- [ ] Implement `Position::apply_fill()` with real P&L calculation (currently stub-with-guard)
+- [ ] Implement `RiskEngine` validation methods — all checks currently deny when `bypass_risk=false`
+- [ ] Implement `ExecutionEngine` position tracking (`handle_fill`, `update_position`)
+- [ ] Implement `ExecAlgorithm` child order spawning (`spawn_market_order`, `spawn_limit_order`)
+- [ ] Add proper decimal types for `Price`/`Quantity` (replace `double` to avoid float precision issues)
+- [ ] Path traversal hardening in `dashboard_server.cpp` file serving
+- [ ] Reduce compiler warnings (~16 remaining, mostly unused parameters in stubs)
 
 ## Contributing
 
