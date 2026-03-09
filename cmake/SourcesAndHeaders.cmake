@@ -11,6 +11,7 @@ set(sources
     src/risk_engine.cpp
     src/strategy.cpp
     src/model.cpp
+    src/utils/rate_limiter.cpp
 )
 
 # Conditionally add Binance client sources when enabled
@@ -18,6 +19,14 @@ if(${PROJECT_NAME}_ENABLE_BINANCE)
     list(APPEND sources
         src/binance/binance_data_client.cpp
         src/binance/binance_execution_client.cpp
+    )
+endif()
+
+# Monitoring sources (requires Boost, so conditional on ENABLE_BINANCE for now)
+if(${PROJECT_NAME}_ENABLE_BINANCE)
+    list(APPEND sources
+        src/monitoring/metrics_collector.cpp
+        src/monitoring/dashboard_server.cpp
     )
 endif()
 
@@ -39,12 +48,20 @@ set(headers
     include/npcTrading/risk_engine.hpp
     include/npcTrading/strategy.hpp
     include/npcTrading/model.hpp
+    include/npcTrading/utils/rate_limiter.hpp
 )
 
 # Binance headers are always available (Pimpl pattern keeps Boost out of public API)
 list(APPEND headers
     include/npcTrading/binance/binance_data_client.hpp
     include/npcTrading/binance/binance_execution_client.hpp
+)
+
+# Monitoring headers
+list(APPEND headers
+    include/npcTrading/monitoring/system_metrics.hpp
+    include/npcTrading/monitoring/metrics_collector.hpp
+    include/npcTrading/monitoring/dashboard_server.hpp
 )
 
 set(test_sources
