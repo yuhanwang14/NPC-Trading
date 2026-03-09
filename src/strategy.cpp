@@ -361,6 +361,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto rejected = std::dynamic_pointer_cast<OrderRejected>(event)) {
         if (rejected->order()) {
             on_order_rejected(*rejected->order(), rejected->reason());
+            orders_.erase(rejected->order()->order_id());
         }
         return;
     }
@@ -368,6 +369,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto denied = std::dynamic_pointer_cast<OrderDenied>(event)) {
         if (denied->order()) {
             on_order_denied(*denied->order(), denied->reason());
+            orders_.erase(denied->order()->order_id());
         }
         return;
     }
@@ -375,6 +377,9 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto filled = std::dynamic_pointer_cast<OrderFilled>(event)) {
         if (filled->order()) {
             on_order_filled(*filled->order(), filled->fill());
+            if (filled->order()->is_filled()) {
+                orders_.erase(filled->order()->order_id());
+            }
         }
         return;
     }
@@ -382,6 +387,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto canceled = std::dynamic_pointer_cast<OrderCanceled>(event)) {
         if (canceled->order()) {
             on_order_canceled(*canceled->order());
+            orders_.erase(canceled->order()->order_id());
         }
         return;
     }
