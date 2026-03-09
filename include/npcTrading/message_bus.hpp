@@ -11,6 +11,7 @@
 #include <queue>
 #include <deque>
 #include <mutex>
+#include <atomic>
 #include <stdexcept>
 
 namespace npcTrading {

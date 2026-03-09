@@ -255,8 +255,9 @@ namespace npcTrading
       throw std::runtime_error("MessageBus must be started before calling run()");
     }
 
-    // Event loop: process all queued messages
-    while (running_)
+    // Single-pass: drain all currently queued messages then return.
+    // The caller (e.g., TradingNode main loop) is responsible for calling run() repeatedly.
+    while (running_.load())
     {
       QueuedMessage msg;
       bool has_message = false;
@@ -277,10 +278,7 @@ namespace npcTrading
       }
       else
       {
-        // No messages - yield CPU briefly
-        // In production, might use condition variables here
-        // For now, just break if queue is empty (single iteration mode)
-        break;
+        break;  // Queue drained — return control to caller
       }
     }
   }
