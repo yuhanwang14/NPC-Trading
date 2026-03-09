@@ -41,7 +41,7 @@ int LiveClock::schedule_callback(Timestamp time, std::function<void()> callback)
     }
 
     // Spawn a lightweight worker that sleeps until due time or cancellation
-    std::thread([this, timer, id]() {
+    auto thread = std::thread([timer]() {
         std::unique_lock<std::mutex> lk(timer->mutex);
         timer->cv.wait_until(lk, timer->when, [&timer]() { return timer->cancelled.load(); });
         lk.unlock();
@@ -53,12 +53,36 @@ int LiveClock::schedule_callback(Timestamp time, std::function<void()> callback)
                 // Swallow exceptions from user callbacks to avoid terminating the process
             }
         }
+    });
 
+    {
         std::lock_guard<std::mutex> lock(timers_mutex_);
-        timers_.erase(id);
-    }).detach();
+        timer_threads_.emplace(id, std::move(thread));
+    }
 
     return id;
+}
+
+LiveClock::~LiveClock() {
+    shutdown();
+}
+
+void LiveClock::shutdown() {
+    std::lock_guard<std::mutex> lock(timers_mutex_);
+    // Cancel all timers
+    for (auto& [id, timer] : timers_) {
+        {
+            std::lock_guard<std::mutex> lk(timer->mutex);
+            timer->cancelled.store(true);
+        }
+        timer->cv.notify_all();
+    }
+    // Join all threads
+    for (auto& [id, t] : timer_threads_) {
+        if (t.joinable()) t.join();
+    }
+    timer_threads_.clear();
+    timers_.clear();
 }
 
 void LiveClock::cancel_callback(int timer_id) {
