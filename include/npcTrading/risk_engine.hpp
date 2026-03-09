@@ -41,6 +41,7 @@ namespace RiskRejection {
     constexpr const char* TRADING_HALTED = "Trading is halted";
     constexpr const char* REDUCE_ONLY_VIOLATION = "Order does not reduce position";
     constexpr const char* SHORT_NOT_ALLOWED = "Short selling not allowed";
+    constexpr const char* NOT_IMPLEMENTED = "Risk validation not implemented";
 }
 
 // ============================================================================

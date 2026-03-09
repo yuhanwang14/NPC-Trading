@@ -84,56 +84,76 @@ namespace npcTrading
       return true;
     }
 
-    // TODO: Implement full validation
-    return true;
+    // STUB-WITH-GUARD: Risk validation not implemented — reject all orders when risk is enabled
+    log_warning("RISK GUARD: validate_command() not fully implemented. "
+                "All orders are DENIED when bypass_risk=false. "
+                "Set bypass_risk=true or implement validation.");
+    rejection_reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::validate_submit_order(const SubmitOrder* command, std::string& rejection_reason)
   {
-    // TODO: Implement validation
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: validate_submit_order() not implemented");
+    rejection_reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::validate_order_against_instrument(const Order* order, std::string& rejection_reason)
   {
-    // TODO: Implement validation
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: validate_order_against_instrument() not implemented");
+    rejection_reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_price_precision(const Order* order, const Instrument* instrument, std::string& reason)
   {
-    // TODO: Implement precision check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_price_precision() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_quantity_precision(const Order* order, const Instrument* instrument, std::string& reason)
   {
-    // TODO: Implement precision check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_quantity_precision() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_quantity_limits(const Order* order, const Instrument* instrument, std::string& reason)
   {
-    // TODO: Implement limit check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_quantity_limits() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_notional_limits(const Order* order, std::string& reason)
   {
-    // TODO: Implement notional check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_notional_limits() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_position_limits(const Order* order, std::string& reason)
   {
-    // TODO: Implement position limit check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_position_limits() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   bool RiskEngine::check_reduce_only(const Order* order, std::string& reason)
   {
-    // TODO: Implement reduce-only check
-    return true;
+    // STUB-WITH-GUARD: Not implemented
+    log_warning("RISK GUARD: check_reduce_only() not implemented");
+    reason = RiskRejection::NOT_IMPLEMENTED;
+    return false;
   }
 
   void RiskEngine::deny_order(Order* order, const std::string& reason)
