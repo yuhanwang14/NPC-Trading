@@ -31,6 +31,7 @@ Cache::~Cache() {
 
 // Order operations
 std::vector<const Order*> Cache::orders_open(const StrategyId& strategy_id) const {
+    std::shared_lock lock(mutex_);
     std::vector<const Order*> result;
     for (const auto& pair : orders_) {
         const auto* ord = pair.second.get();
@@ -44,6 +45,7 @@ std::vector<const Order*> Cache::orders_open(const StrategyId& strategy_id) cons
 }
 
 std::vector<const Order*> Cache::orders_closed(const StrategyId& strategy_id) const {
+    std::shared_lock lock(mutex_);
     std::vector<const Order*> result;
     for (const auto& pair : orders_) {
         const auto* ord = pair.second.get();
@@ -57,15 +59,18 @@ std::vector<const Order*> Cache::orders_closed(const StrategyId& strategy_id) co
 }
 
 const Order* Cache::order(const OrderId& order_id) const {
+    std::shared_lock lock(mutex_);
     auto it = orders_.find(order_id);
     return (it != orders_.end()) ? it->second.get() : nullptr;
 }
 
 bool Cache::order_exists(const OrderId& order_id) const {
+    std::shared_lock lock(mutex_);
     return orders_.find(order_id) != orders_.end();
 }
 
 void Cache::add_order(Order order) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_order_ts_, order.order_id(), order.timestamp())) {
         return;
     }
@@ -74,6 +79,7 @@ void Cache::add_order(Order order) {
 }
 
 void Cache::update_order(const Order& order) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_order_ts_, order.order_id(), order.timestamp())) {
         return;
     }
@@ -81,12 +87,14 @@ void Cache::update_order(const Order& order) {
     if (it != orders_.end()) {
         *(it->second) = order;
     } else {
+        lock.unlock();
         add_order(order);
     }
 }
 
 // Position operations
 std::vector<const Position*> Cache::positions_open(const StrategyId& strategy_id) const {
+    std::shared_lock lock(mutex_);
     std::vector<const Position*> result;
     for (const auto& pair : positions_) {
         const auto* pos = pair.second.get();
@@ -100,6 +108,7 @@ std::vector<const Position*> Cache::positions_open(const StrategyId& strategy_id
 }
 
 std::vector<const Position*> Cache::positions_closed(const StrategyId& strategy_id) const {
+    std::shared_lock lock(mutex_);
     std::vector<const Position*> result;
     for (const auto& pair : positions_) {
         const auto* pos = pair.second.get();
@@ -113,12 +122,14 @@ std::vector<const Position*> Cache::positions_closed(const StrategyId& strategy_
 }
 
 const Position* Cache::position(const PositionId& position_id) const {
+    std::shared_lock lock(mutex_);
     auto it = positions_.find(position_id);
     return (it != positions_.end()) ? it->second.get() : nullptr;
 }
 
 const Position* Cache::position_for_instrument(const InstrumentId& instrument_id,
                                                const StrategyId& strategy_id) const {
+    std::shared_lock lock(mutex_);
     for (const auto& pair : positions_) {
         const auto* pos = pair.second.get();
         if (pos->instrument_id() == instrument_id &&
@@ -132,10 +143,12 @@ const Position* Cache::position_for_instrument(const InstrumentId& instrument_id
 }
 
 bool Cache::position_exists(const PositionId& position_id) const {
+    std::shared_lock lock(mutex_);
     return positions_.find(position_id) != positions_.end();
 }
 
 void Cache::add_position(Position position) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_position_ts_, position.position_id(), position.timestamp())) {
         return;
     }
@@ -144,6 +157,7 @@ void Cache::add_position(Position position) {
 }
 
 void Cache::update_position(const Position& position) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_position_ts_, position.position_id(), position.timestamp())) {
         return;
     }
@@ -151,22 +165,26 @@ void Cache::update_position(const Position& position) {
     if (it != positions_.end()) {
         *(it->second) = position;
     } else {
+        lock.unlock();
         add_position(position);
     }
 }
 
 // Market data operations
 const QuoteTick* Cache::quote_tick(const InstrumentId& instrument_id) const {
+    std::shared_lock lock(mutex_);
     auto it = quote_ticks_.find(instrument_id);
     return (it != quote_ticks_.end()) ? &(it->second) : nullptr;
 }
 
 const TradeTick* Cache::trade_tick(const InstrumentId& instrument_id) const {
+    std::shared_lock lock(mutex_);
     auto it = trade_ticks_.find(instrument_id);
     return (it != trade_ticks_.end()) ? &(it->second) : nullptr;
 }
 
 const Bar* Cache::bar(const BarType& bar_type) const {
+    std::shared_lock lock(mutex_);
     auto key = bar_key(bar_type);
     auto it = bars_.find(key);
     return (it != bars_.end()) ? &(it->second) : nullptr;
@@ -174,6 +192,7 @@ const Bar* Cache::bar(const BarType& bar_type) const {
 
 const OrderBook* Cache::order_book(const InstrumentId& instrument_id,
                                    const BookFrequency& frequency) const {
+    std::shared_lock lock(mutex_);
     auto key = order_book_key(instrument_id, frequency);
     auto it = order_books_.find(key);
     return (it != order_books_.end()) ? &(it->second) : nullptr;
@@ -182,6 +201,7 @@ const OrderBook* Cache::order_book(const InstrumentId& instrument_id,
 std::vector<OrderBook> Cache::recent_order_books(const InstrumentId& instrument_id,
                                                  const BookFrequency& frequency,
                                                  size_t n) const {
+    std::shared_lock lock(mutex_);
     auto key = order_book_key(instrument_id, frequency);
     auto it = order_book_history_.find(key);
     if (it == order_book_history_.end()) {
@@ -191,6 +211,7 @@ std::vector<OrderBook> Cache::recent_order_books(const InstrumentId& instrument_
 }
 
 void Cache::add_quote_tick(const QuoteTick& tick) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_quote_ts_, tick.instrument_id(), tick.timestamp())) {
         return;
     }
@@ -198,6 +219,7 @@ void Cache::add_quote_tick(const QuoteTick& tick) {
 }
 
 void Cache::add_trade_tick(const TradeTick& tick) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_trade_ts_, tick.instrument_id(), tick.timestamp())) {
         return;
     }
@@ -209,6 +231,7 @@ void Cache::add_trade_tick(const TradeTick& tick) {
 }
 
 void Cache::add_bar(const Bar& bar) {
+    std::unique_lock lock(mutex_);
     auto key = bar_key(bar.bar_type());
     if (is_stale_and_update(latest_bar_ts_, key, bar.timestamp())) {
         return;
@@ -221,6 +244,7 @@ void Cache::add_bar(const Bar& bar) {
 }
 
 void Cache::update_order_book(const OrderBook& book, const BookFrequency& frequency) {
+    std::unique_lock lock(mutex_);
     auto key = order_book_key(book.instrument_id(), frequency);
     if (is_stale_and_update(latest_order_book_ts_, key, book.timestamp())) {
         return;
@@ -234,11 +258,13 @@ void Cache::update_order_book(const OrderBook& book, const BookFrequency& freque
 
 // Instrument/Account operations
 const Instrument* Cache::instrument(const InstrumentId& instrument_id) const {
+    std::shared_lock lock(mutex_);
     auto it = instruments_.find(instrument_id);
     return (it != instruments_.end()) ? &(it->second) : nullptr;
 }
 
 void Cache::add_instrument(const Instrument& instrument) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_instrument_ts_, instrument.id(), instrument.timestamp())) {
         return;
     }
@@ -246,11 +272,13 @@ void Cache::add_instrument(const Instrument& instrument) {
 }
 
 const Account* Cache::account(const AccountId& account_id) const {
+    std::shared_lock lock(mutex_);
     auto it = accounts_.find(account_id);
     return (it != accounts_.end()) ? &(it->second) : nullptr;
 }
 
 void Cache::add_account(const Account& account) {
+    std::unique_lock lock(mutex_);
     if (is_stale_and_update(latest_account_ts_, account.account_id(), account.timestamp())) {
         return;
     }
@@ -258,6 +286,7 @@ void Cache::add_account(const Account& account) {
 }
 
 void Cache::clear() {
+    std::unique_lock lock(mutex_);
     orders_.clear();
     positions_.clear();
     quote_ticks_.clear();
@@ -280,21 +309,24 @@ void Cache::clear() {
 }
 
 void Cache::print_stats() const {
+    std::shared_lock lock(mutex_);
     // TODO: Implement statistics
 }
 
 std::vector<QuoteTick> Cache::recent_quotes(const InstrumentId& instrument_id, size_t n) const {
+    std::shared_lock lock(mutex_);
     if (n == 0) {
         return {};
     }
-    auto latest = quote_tick(instrument_id);
-    if (!latest) {
+    auto it = quote_ticks_.find(instrument_id);
+    if (it == quote_ticks_.end()) {
         return {};
     }
-    return { *latest };
+    return { it->second };
 }
 
 std::vector<TradeTick> Cache::recent_trades(const InstrumentId& instrument_id, size_t n) const {
+    std::shared_lock lock(mutex_);
     auto it = trade_history_.find(instrument_id);
     if (it == trade_history_.end()) {
         return {};
@@ -303,6 +335,7 @@ std::vector<TradeTick> Cache::recent_trades(const InstrumentId& instrument_id, s
 }
 
 std::vector<Bar> Cache::recent_bars(const BarType& bar_type, size_t n) const {
+    std::shared_lock lock(mutex_);
     auto key = bar_key(bar_type);
     auto it = bar_history_.find(key);
     if (it == bar_history_.end()) {

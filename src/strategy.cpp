@@ -185,26 +185,6 @@ void Actor::handle_message(const std::shared_ptr<Message>& msg) {
         return;
     }
 
-    if (auto bar_msg = std::dynamic_pointer_cast<BarMessage>(msg)) {
-        on_bar(bar_msg->bar());
-        return;
-    }
-
-    if (auto quote_msg = std::dynamic_pointer_cast<QuoteTickMessage>(msg)) {
-        on_quote(quote_msg->tick());
-        return;
-    }
-
-    if (auto trade_msg = std::dynamic_pointer_cast<TradeTickMessage>(msg)) {
-        on_trade(trade_msg->trade());
-        return;
-    }
-
-    if (auto book_msg = std::dynamic_pointer_cast<OrderBookMessage>(msg)) {
-        on_order_book(book_msg->book());
-        return;
-    }
-
     on_event(msg);
 }
 
@@ -246,7 +226,7 @@ void Strategy::submit_market_order(const InstrumentId& instrument_id,
         order_id,
         config_.strategy_id,
         instrument_id,
-        "", // client id
+        config_.default_client_id,
         side,
         OrderType::MARKET,
         quantity,
@@ -283,7 +263,7 @@ void Strategy::submit_limit_order(const InstrumentId& instrument_id,
         order_id,
         config_.strategy_id,
         instrument_id,
-        "", // client id
+        config_.default_client_id,
         side,
         OrderType::LIMIT,
         quantity,
@@ -361,6 +341,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto rejected = std::dynamic_pointer_cast<OrderRejected>(event)) {
         if (rejected->order()) {
             on_order_rejected(*rejected->order(), rejected->reason());
+            orders_.erase(rejected->order()->order_id());
         }
         return;
     }
@@ -368,6 +349,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto denied = std::dynamic_pointer_cast<OrderDenied>(event)) {
         if (denied->order()) {
             on_order_denied(*denied->order(), denied->reason());
+            orders_.erase(denied->order()->order_id());
         }
         return;
     }
@@ -375,6 +357,9 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto filled = std::dynamic_pointer_cast<OrderFilled>(event)) {
         if (filled->order()) {
             on_order_filled(*filled->order(), filled->fill());
+            if (filled->order()->is_filled()) {
+                orders_.erase(filled->order()->order_id());
+            }
         }
         return;
     }
@@ -382,6 +367,7 @@ void Strategy::on_event(const std::shared_ptr<Message>& event) {
     if (auto canceled = std::dynamic_pointer_cast<OrderCanceled>(event)) {
         if (canceled->order()) {
             on_order_canceled(*canceled->order());
+            orders_.erase(canceled->order()->order_id());
         }
         return;
     }
@@ -403,6 +389,8 @@ void ExecAlgorithm::spawn_market_order(const InstrumentId& instrument_id,
                                       OrderSide side,
                                       Quantity quantity,
                                       TimeInForce tif) {
+    log_warning("ExecAlgorithm::spawn_market_order() NOT IMPLEMENTED — "
+                "child order for " + instrument_id + " will NOT be submitted.");
     // TODO: Create and submit child order
 }
 
@@ -411,10 +399,14 @@ void ExecAlgorithm::spawn_limit_order(const InstrumentId& instrument_id,
                                      Quantity quantity,
                                      Price price,
                                      TimeInForce tif) {
+    log_warning("ExecAlgorithm::spawn_limit_order() NOT IMPLEMENTED — "
+                "child order for " + instrument_id + " will NOT be submitted.");
     // TODO: Create and submit child order
 }
 
 void ExecAlgorithm::subscribe_to_order(const OrderId& order_id) {
+    log_warning("ExecAlgorithm::subscribe_to_order() NOT IMPLEMENTED — "
+                "order " + order_id + " events will NOT be received.");
     // TODO: Subscribe to order events
 }
 

@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -59,14 +60,15 @@ public:
 class LiveClock : public Clock {
 public:
     LiveClock() = default;
-    ~LiveClock() override = default;
-    
+    ~LiveClock() override;
+
     Timestamp now() const override;
     TimestampNs timestamp_ns() const override;
-    
+
     int schedule_callback(Timestamp time, std::function<void()> callback) override;
     void cancel_callback(int timer_id) override;
-    
+    void shutdown();
+
 private:
     struct Timer {
         Timestamp when;
@@ -79,6 +81,7 @@ private:
     std::atomic<int> next_timer_id_{0};
     std::mutex timers_mutex_;
     std::unordered_map<int, std::shared_ptr<Timer>> timers_;
+    std::unordered_map<int, std::thread> timer_threads_;
 };
 
 // ============================================================================

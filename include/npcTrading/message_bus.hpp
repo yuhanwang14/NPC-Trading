@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -10,6 +11,7 @@
 #include <queue>
 #include <deque>
 #include <mutex>
+#include <atomic>
 #include <stdexcept>
 
 namespace npcTrading {
@@ -182,7 +184,7 @@ private:
     };
     
     MessageBusConfig config_;
-    bool running_;
+    std::atomic<bool> running_;
     
     // Endpoint handlers (point-to-point)
     std::unordered_map<std::string, MessageHandler> message_handlers_;

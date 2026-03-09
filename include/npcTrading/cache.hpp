@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <memory>
 #include <algorithm>
+#include <shared_mutex>
 
 namespace npcTrading {
 
@@ -304,6 +305,8 @@ private:
     // TODO: Add indexing for fast queries
     // TODO: Add LRU eviction for capacity management
     // TODO: Add snapshot/restore functionality
+
+    mutable std::shared_mutex mutex_;
 };
 
 } // namespace npcTrading

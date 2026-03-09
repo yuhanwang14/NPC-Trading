@@ -202,7 +202,8 @@ namespace npcTrading
         order->set_filled_qty(Quantity(current_filled + fill_qty));
 
         // Check if fully filled
-        if (order->filled_qty().as_double() >= order->quantity().as_double())
+        constexpr double FILL_EPSILON = 1e-9;
+        if (order->filled_qty().as_double() >= order->quantity().as_double() - FILL_EPSILON)
         {
           order->set_status(OrderStatus::FILLED);
         }
@@ -253,12 +254,19 @@ namespace npcTrading
 
   void ExecutionEngine::handle_fill(const OrderFilled& event)
   {
-    // TODO: Update position
+    // STUB-WITH-GUARD: Position update not implemented
+    log_warning("handle_fill() NOT IMPLEMENTED — fill for order "
+                + event.order_id() + " will NOT update positions. "
+                "Position data is UNRELIABLE.");
+    // TODO: Update position via update_position()
   }
 
   void ExecutionEngine::update_position(Order* order, const Fill& fill)
   {
-    // TODO: Implement position update
+    // STUB-WITH-GUARD: Position tracking not implemented
+    log_warning("update_position() NOT IMPLEMENTED — order "
+                + order->order_id() + " fill not applied to position.");
+    // TODO: Implement position update (lookup/create position, call apply_fill)
   }
 
   PositionId ExecutionEngine::generate_position_id(Order* order)

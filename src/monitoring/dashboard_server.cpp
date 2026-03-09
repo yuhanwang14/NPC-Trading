@@ -536,20 +536,33 @@ namespace npcTrading
 
     void DashboardServer::WsSession::send(const std::string& message)
     {
-      if (!open_.load())
-      {
+      if (!open_.load()) { return; }
+      write_queue_.push(message);
+      if (!writing_) {
+        do_write();
+      }
+    }
+
+    void DashboardServer::WsSession::do_write()
+    {
+      if (write_queue_.empty()) {
+        writing_ = false;
         return;
       }
-
-      try
-      {
-        ws_.text(true);
-        ws_.write(net::buffer(message));
-      }
-      catch (...)
-      {
-        open_.store(false);
-      }
+      writing_ = true;
+      auto self = shared_from_this();
+      auto& front = write_queue_.front();
+      ws_.text(true);
+      ws_.async_write(
+          net::buffer(front),
+          [self](beast::error_code ec, std::size_t /*bytes_transferred*/) {
+            self->write_queue_.pop();
+            if (ec) {
+              self->open_.store(false);
+              return;
+            }
+            self->do_write();
+          });
     }
 
     void DashboardServer::WsSession::on_write(beast::error_code ec, std::size_t /*bytes_transferred*/)

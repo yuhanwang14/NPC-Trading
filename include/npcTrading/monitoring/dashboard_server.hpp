@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <thread>
 #include <vector>
@@ -125,6 +126,7 @@ namespace npcTrading
        private:
         void on_accept(beast::error_code ec);
         void do_read();
+        void do_write();
         void on_read(beast::error_code ec, std::size_t bytes_transferred);
         void on_write(beast::error_code ec, std::size_t bytes_transferred);
 
@@ -132,6 +134,8 @@ namespace npcTrading
         beast::flat_buffer buffer_;
         DashboardServer* server_;
         std::atomic<bool> open_{ false };
+        std::queue<std::string> write_queue_;
+        bool writing_ = false;
       };
 
       void accept_loop();

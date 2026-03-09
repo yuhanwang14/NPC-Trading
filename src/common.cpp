@@ -29,6 +29,11 @@ std::string to_string(OrderType type) {
         case OrderType::LIMIT: return "LIMIT";
         case OrderType::STOP_MARKET: return "STOP_MARKET";
         case OrderType::STOP_LIMIT: return "STOP_LIMIT";
+        case OrderType::STOP_LOSS: return "STOP_LOSS";
+        case OrderType::TAKE_PROFIT: return "TAKE_PROFIT";
+        case OrderType::TAKE_PROFIT_LIMIT: return "TAKE_PROFIT_LIMIT";
+        case OrderType::LIMIT_MAKER: return "LIMIT_MAKER";
+        case OrderType::TRAILING_STOP_MARKET: return "TRAILING_STOP_MARKET";
         default: return "UNKNOWN";
     }
 }
@@ -39,6 +44,7 @@ std::string to_string(TimeInForce tif) {
         case TimeInForce::IOC: return "IOC";
         case TimeInForce::FOK: return "FOK";
         case TimeInForce::GTD: return "GTD";
+        case TimeInForce::GTX: return "GTX";
         default: return "UNKNOWN";
     }
 }
