@@ -187,8 +187,7 @@ struct StrategyConfig {
     StrategyId strategy_id;
     OmsType oms_type = OmsType::NETTING;
     bool manage_positions = true;
-    
-    // Add strategy-specific configuration here
+    ClientId default_client_id;  // Must be set to a registered ExecutionClient ID
 };
 
 // ============================================================================
