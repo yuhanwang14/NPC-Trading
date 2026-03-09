@@ -28,6 +28,8 @@ jobs:
         run: |
           brew install boost openssl googletest
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
+          echo "Boost_ROOT=$(brew --prefix boost)" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix boost);$(brew --prefix openssl)" >> $GITHUB_ENV
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
