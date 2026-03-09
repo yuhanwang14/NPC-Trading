@@ -389,6 +389,8 @@ void ExecAlgorithm::spawn_market_order(const InstrumentId& instrument_id,
                                       OrderSide side,
                                       Quantity quantity,
                                       TimeInForce tif) {
+    log_warning("ExecAlgorithm::spawn_market_order() NOT IMPLEMENTED — "
+                "child order for " + instrument_id + " will NOT be submitted.");
     // TODO: Create and submit child order
 }
 
@@ -397,10 +399,14 @@ void ExecAlgorithm::spawn_limit_order(const InstrumentId& instrument_id,
                                      Quantity quantity,
                                      Price price,
                                      TimeInForce tif) {
+    log_warning("ExecAlgorithm::spawn_limit_order() NOT IMPLEMENTED — "
+                "child order for " + instrument_id + " will NOT be submitted.");
     // TODO: Create and submit child order
 }
 
 void ExecAlgorithm::subscribe_to_order(const OrderId& order_id) {
+    log_warning("ExecAlgorithm::subscribe_to_order() NOT IMPLEMENTED — "
+                "order " + order_id + " events will NOT be received.");
     // TODO: Subscribe to order events
 }
 
