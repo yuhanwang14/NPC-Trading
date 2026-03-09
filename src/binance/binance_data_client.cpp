@@ -907,7 +907,7 @@ namespace npcTrading
     std::unordered_map<InstrumentId, int> book_subs_;    // instrument -> depth
     std::unordered_map<InstrumentId, LocalOrderBook> order_books_;
 
-    bool needs_resubscribe_ = false;
+    std::atomic<bool> needs_resubscribe_{false};
   };
 
   // ============================================================================
