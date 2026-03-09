@@ -185,26 +185,6 @@ void Actor::handle_message(const std::shared_ptr<Message>& msg) {
         return;
     }
 
-    if (auto bar_msg = std::dynamic_pointer_cast<BarMessage>(msg)) {
-        on_bar(bar_msg->bar());
-        return;
-    }
-
-    if (auto quote_msg = std::dynamic_pointer_cast<QuoteTickMessage>(msg)) {
-        on_quote(quote_msg->tick());
-        return;
-    }
-
-    if (auto trade_msg = std::dynamic_pointer_cast<TradeTickMessage>(msg)) {
-        on_trade(trade_msg->trade());
-        return;
-    }
-
-    if (auto book_msg = std::dynamic_pointer_cast<OrderBookMessage>(msg)) {
-        on_order_book(book_msg->book());
-        return;
-    }
-
     on_event(msg);
 }
 
