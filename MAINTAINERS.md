@@ -4,7 +4,9 @@
 
 | Name | Role | GitHub |
 |------|------|--------|
-| Yuhan Wang | Project lead, core development | [@yuhanwang14](https://github.com/yuhanwang14) |
+| Yuhan Wang | Core development, infrastructure | [@yuhanwang14](https://github.com/yuhanwang14) |
+| yuqiannemo | Project lead, core development | [@yuqiannemo](https://github.com/yuqiannemo) |
+| QFOI | Core contributor | [@QFOI](https://github.com/QFOI) |
 
 ## Responsibilities
 
