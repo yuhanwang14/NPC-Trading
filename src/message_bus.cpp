@@ -12,7 +12,7 @@ namespace npcTrading
   // Construction / Destruction
   // ============================================================================
 
-  MessageBus::MessageBus(const MessageBusConfig& config) : config_(config), running_(false), messages_processed_(0)
+  MessageBus::MessageBus(const MessageBusConfig& config) : config_(config), running_{false}, messages_processed_(0)
   {
     if (config_.max_queue_size == 0)
     {
