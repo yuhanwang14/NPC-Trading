@@ -24,7 +24,7 @@ public:
           Timestamp timestamp = std::chrono::system_clock::now(),
           Price stop_price = Price(0),           // For STOP orders
           double trailing_delta = 0.0,           // For TRAILING_STOP (percent or absolute)
-          Price iceberg_qty = Price(0))          // For ICEBERG orders (visible qty)
+          Quantity iceberg_qty = Quantity(0))     // For ICEBERG orders (visible qty)
         : order_id_(order_id),
           strategy_id_(strategy_id),
           instrument_id_(instrument_id),
@@ -62,7 +62,7 @@ public:
     // Extended getters for new order types
     Price stop_price() const { return stop_price_; }
     double trailing_delta() const { return trailing_delta_; }
-    Price iceberg_qty() const { return iceberg_qty_; }
+    Quantity iceberg_qty() const { return iceberg_qty_; }
     Price activation_price() const { return activation_price_; }
     std::string client_order_id() const { return client_order_id_; }
     std::string exchange_order_id() const { return exchange_order_id_; }
@@ -111,7 +111,7 @@ private:
     // Extended fields for advanced order types
     Price stop_price_;              // Trigger price for stop orders
     double trailing_delta_;         // Trailing amount/percentage for trailing stops
-    Price iceberg_qty_;             // Visible quantity for iceberg orders
+    Quantity iceberg_qty_;          // Visible quantity for iceberg orders
     Price activation_price_;        // Actual activation price for triggered orders
     std::string client_order_id_;   // Client-generated unique order ID
     std::string exchange_order_id_; // Exchange-assigned order ID
