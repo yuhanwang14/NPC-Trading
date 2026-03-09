@@ -165,6 +165,15 @@ namespace npcTrading
         io_thread_.join();
       }
 
+      // Join snapshot threads
+      {
+        std::lock_guard<std::mutex> lock(snapshot_threads_mutex_);
+        for (auto& t : snapshot_threads_) {
+          if (t.joinable()) t.join();
+        }
+        snapshot_threads_.clear();
+      }
+
       // Clear all subscriptions
       {
         std::lock_guard<std::mutex> lock(sub_mutex_);
@@ -809,7 +818,7 @@ namespace npcTrading
     void schedule_book_snapshot(const InstrumentId& instrument_id, int depth)
     {
       // Fetch snapshot in a separate thread to not block
-      std::thread(
+      auto t = std::thread(
           [this, instrument_id, depth]()
           {
             try
@@ -861,8 +870,11 @@ namespace npcTrading
             {
               std::cerr << "[BinanceDataClient] Error fetching book snapshot: " << e.what() << std::endl;
             }
-          })
-          .detach();
+          });
+      {
+        std::lock_guard<std::mutex> lock(snapshot_threads_mutex_);
+        snapshot_threads_.push_back(std::move(t));
+      }
     }
 
     // ========================================================================
@@ -908,6 +920,10 @@ namespace npcTrading
     std::unordered_map<InstrumentId, LocalOrderBook> order_books_;
 
     std::atomic<bool> needs_resubscribe_{false};
+
+    // Joinable snapshot threads (replaces detached threads)
+    std::vector<std::thread> snapshot_threads_;
+    std::mutex snapshot_threads_mutex_;
   };
 
   // ============================================================================

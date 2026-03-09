@@ -221,6 +221,15 @@ namespace npcTrading
         keepalive_thread_.join();
       }
 
+      // Join order threads
+      {
+        std::lock_guard<std::mutex> lock(order_threads_mutex_);
+        for (auto& t : order_threads_) {
+          if (t.joinable()) t.join();
+        }
+        order_threads_.clear();
+      }
+
       std::cout << "[BinanceExecutionClient] Disconnected" << std::endl;
     }
 
@@ -281,7 +290,7 @@ namespace npcTrading
       query += "&signature=" + signature;
 
       // Execute REST request in a separate thread to not block
-      std::thread(
+      auto t = std::thread(
           [this, query, order_id = order->order_id()]()
           {
             try
@@ -300,8 +309,11 @@ namespace npcTrading
               std::cerr << "[BinanceExecutionClient] Order submit error: " << e.what() << std::endl;
               emit_order_rejected(order_id, e.what());
             }
-          })
-          .detach();
+          });
+      {
+        std::lock_guard<std::mutex> lock(order_threads_mutex_);
+        order_threads_.push_back(std::move(t));
+      }
     }
 
     void modify_order(Order* /*order*/, Quantity /*new_quantity*/, Price /*new_price*/)
@@ -324,7 +336,7 @@ namespace npcTrading
       std::string signature = hmac_sha256(config_.api_secret, query);
       query += "&signature=" + signature;
 
-      std::thread(
+      auto t = std::thread(
           [this, query, order_id = order->order_id()]()
           {
             try
@@ -342,8 +354,11 @@ namespace npcTrading
             {
               std::cerr << "[BinanceExecutionClient] Order cancel error: " << e.what() << std::endl;
             }
-          })
-          .detach();
+          });
+      {
+        std::lock_guard<std::mutex> lock(order_threads_mutex_);
+        order_threads_.push_back(std::move(t));
+      }
     }
 
     void sync_open_orders()
@@ -947,6 +962,10 @@ namespace npcTrading
 
     // Rate Limiter
     std::unique_ptr<utils::TokenBucketRateLimiter> rate_limiter_;
+
+    // Joinable order threads (replaces detached threads)
+    std::vector<std::thread> order_threads_;
+    std::mutex order_threads_mutex_;
   };
 
   // ============================================================================
