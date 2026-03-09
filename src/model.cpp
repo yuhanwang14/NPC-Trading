@@ -5,8 +5,10 @@ namespace npcTrading {
 
 // Order implementation
 bool Order::is_open() const {
-    return status_ == OrderStatus::SUBMITTED ||
+    return status_ == OrderStatus::INITIALIZED ||
+           status_ == OrderStatus::SUBMITTED ||
            status_ == OrderStatus::ACCEPTED ||
+           status_ == OrderStatus::TRIGGERED ||
            status_ == OrderStatus::PARTIALLY_FILLED;
 }
 
