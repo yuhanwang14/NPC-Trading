@@ -271,6 +271,12 @@ npcTrading/
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Governance](GOVERNANCE.md)
+- [Security Policy](SECURITY.md)
+- [Roadmap](ROADMAP.md)
+- [Maintainers](MAINTAINERS.md)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
