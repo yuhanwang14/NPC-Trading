@@ -21,7 +21,10 @@ public:
           Quantity quantity,
           Price price = Price(0),
           TimeInForce time_in_force = TimeInForce::GTC,
-          Timestamp timestamp = std::chrono::system_clock::now())
+          Timestamp timestamp = std::chrono::system_clock::now(),
+          Price stop_price = Price(0),           // For STOP orders
+          double trailing_delta = 0.0,           // For TRAILING_STOP (percent or absolute)
+          Price iceberg_qty = Price(0))          // For ICEBERG orders (visible qty)
         : order_id_(order_id),
           strategy_id_(strategy_id),
           instrument_id_(instrument_id),
@@ -33,7 +36,13 @@ public:
           time_in_force_(time_in_force),
           filled_qty_(0.0),
           status_(OrderStatus::INITIALIZED),
-          timestamp_(timestamp) {}
+          timestamp_(timestamp),
+          stop_price_(stop_price),
+          trailing_delta_(trailing_delta),
+          iceberg_qty_(iceberg_qty),
+          activation_price_(Price(0)),
+          client_order_id_(""),
+          exchange_order_id_("") {}
     
     // Getters
     OrderId order_id() const { return order_id_; }
@@ -50,10 +59,27 @@ public:
     PositionId position_id() const { return position_id_; }
     Timestamp timestamp() const { return timestamp_; }
     
+    // Extended getters for new order types
+    Price stop_price() const { return stop_price_; }
+    double trailing_delta() const { return trailing_delta_; }
+    Price iceberg_qty() const { return iceberg_qty_; }
+    Price activation_price() const { return activation_price_; }
+    std::string client_order_id() const { return client_order_id_; }
+    std::string exchange_order_id() const { return exchange_order_id_; }
+    
     // Status checks
     bool is_open() const;
     bool is_closed() const;
     bool is_filled() const { return status_ == OrderStatus::FILLED; }
+    bool is_stop_order() const { 
+        return type_ == OrderType::STOP_MARKET || 
+               type_ == OrderType::STOP_LIMIT ||
+               type_ == OrderType::STOP_LOSS ||
+               type_ == OrderType::TAKE_PROFIT ||
+               type_ == OrderType::TAKE_PROFIT_LIMIT ||
+               type_ == OrderType::TRAILING_STOP_MARKET;
+    }
+    bool is_conditional() const { return is_stop_order(); }
     
     // Modifications
     void set_status(OrderStatus status) { status_ = status; }
@@ -62,6 +88,10 @@ public:
     void update_price(Price new_price) { price_ = new_price; }
     void update_quantity(Quantity new_quantity) { quantity_ = new_quantity; }
     void set_timestamp(Timestamp ts) { timestamp_ = ts; }
+    void set_stop_price(Price stop_price) { stop_price_ = stop_price; }
+    void set_activation_price(Price activation_price) { activation_price_ = activation_price; }
+    void set_client_order_id(const std::string& id) { client_order_id_ = id; }
+    void set_exchange_order_id(const std::string& id) { exchange_order_id_ = id; }
     
 private:
     OrderId order_id_;
@@ -77,6 +107,14 @@ private:
     OrderStatus status_;
     PositionId position_id_;
     Timestamp timestamp_;
+    
+    // Extended fields for advanced order types
+    Price stop_price_;              // Trigger price for stop orders
+    double trailing_delta_;         // Trailing amount/percentage for trailing stops
+    Price iceberg_qty_;             // Visible quantity for iceberg orders
+    Price activation_price_;        // Actual activation price for triggered orders
+    std::string client_order_id_;   // Client-generated unique order ID
+    std::string exchange_order_id_; // Exchange-assigned order ID
 };
 
 // ============================================================================

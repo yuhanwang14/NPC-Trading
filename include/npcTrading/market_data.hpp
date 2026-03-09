@@ -281,57 +281,141 @@ namespace npcTrading
     Price price;
     Quantity size;
     int order_count;
-  };
 
-  /// Order book (depth snapshot)
-  class OrderBook
-  {
-   public:
-    OrderBook() = default;
-    OrderBook(
-        InstrumentId instrument_id,
-        const std::vector<OrderBookLevel>& bids,
-        const std::vector<OrderBookLevel>& asks,
-        Timestamp timestamp)
+    OrderBookLevel() : price(0), size(0), order_count(0) {}
+    OrderBookLevel(Price p, Quantity s, int c = 0)
+        : price(p), size(s), order_count(c) {}
+};
+
+/// Order book depth enum
+enum class OrderBookDepth {
+    L1,    // Best bid/ask only (top of book)
+    L2,    // Price-aggregated depth (multiple levels)
+    L3     // Full order-level depth (rare, exchange-specific)
+};
+
+/// Order book delta/update type
+enum class OrderBookDeltaType {
+    ADD,      // New level added
+    UPDATE,   // Existing level quantity changed
+    DELETE,   // Level removed (quantity = 0)
+    SNAPSHOT  // Full order book snapshot
+};
+
+/// Order book delta (incremental update)
+struct OrderBookDelta {
+    OrderBookDeltaType type;
+    OrderSide side;
+    Price price;
+    Quantity size;
+    Timestamp timestamp;
+
+    OrderBookDelta(OrderBookDeltaType t, OrderSide s, Price p, Quantity sz, Timestamp ts)
+        : type(t), side(s), price(p), size(sz), timestamp(ts) {}
+};
+
+/// Order book statistics
+struct OrderBookStats {
+    double spread;              // Best ask - best bid
+    double mid_price;           // (Best bid + best ask) / 2
+    double weighted_mid_price;  // Volume-weighted mid price
+    double imbalance;           // (bid_volume - ask_volume) / (bid_volume + ask_volume)
+    Quantity total_bid_volume;
+    Quantity total_ask_volume;
+    int bid_levels;
+    int ask_levels;
+
+    OrderBookStats() : spread(0), mid_price(0), weighted_mid_price(0),
+                      imbalance(0), total_bid_volume(0), total_ask_volume(0),
+                      bid_levels(0), ask_levels(0) {}
+};
+
+/// Order book (depth snapshot with enhanced functionality)
+class OrderBook {
+public:
+    OrderBook() : depth_level_(OrderBookDepth::L2), sequence_(0) {}
+    OrderBook(InstrumentId instrument_id,
+              const std::vector<OrderBookLevel>& bids,
+              const std::vector<OrderBookLevel>& asks,
+              Timestamp timestamp,
+              OrderBookDepth depth = OrderBookDepth::L2,
+              uint64_t sequence = 0)
         : instrument_id_(instrument_id),
           bids_(bids),
           asks_(asks),
-          timestamp_(timestamp)
-    {
+          timestamp_(timestamp),
+          depth_level_(depth),
+          sequence_(sequence) {
+        compute_stats();
     }
 
-    InstrumentId instrument_id() const
-    {
-      return instrument_id_;
-    }
-    const std::vector<OrderBookLevel>& bids() const
-    {
-      return bids_;
-    }
-    const std::vector<OrderBookLevel>& asks() const
-    {
-      return asks_;
-    }
-    Timestamp timestamp() const
-    {
-      return timestamp_;
-    }
+    // ========================================================================
+    // Basic Accessors
+    // ========================================================================
 
-    Price best_bid_price() const
-    {
-      return bids_.empty() ? Price(0) : bids_[0].price;
-    }
-    Price best_ask_price() const
-    {
-      return asks_.empty() ? Price(0) : asks_[0].price;
-    }
+    InstrumentId instrument_id() const { return instrument_id_; }
+    const std::vector<OrderBookLevel>& bids() const { return bids_; }
+    const std::vector<OrderBookLevel>& asks() const { return asks_; }
+    Timestamp timestamp() const { return timestamp_; }
+    OrderBookDepth depth_level() const { return depth_level_; }
+    uint64_t sequence() const { return sequence_; }
 
-   private:
+    // ========================================================================
+    // Top of Book (L1)
+    // ========================================================================
+
+    Price best_bid_price() const { return bids_.empty() ? Price(0) : bids_[0].price; }
+    Price best_ask_price() const { return asks_.empty() ? Price(0) : asks_[0].price; }
+    Quantity best_bid_size() const { return bids_.empty() ? Quantity(0) : bids_[0].size; }
+    Quantity best_ask_size() const { return asks_.empty() ? Quantity(0) : asks_[0].size; }
+
+    // ========================================================================
+    // Incremental Updates
+    // ========================================================================
+
+    bool apply_delta(const OrderBookDelta& delta);
+    void clear();
+
+    // ========================================================================
+    // Analytics and Statistics
+    // ========================================================================
+
+    const OrderBookStats& stats() const { return stats_; }
+
+    double spread() const { return stats_.spread; }
+    double mid_price() const { return stats_.mid_price; }
+    double imbalance() const { return stats_.imbalance; }
+
+    double calculate_vwap(OrderSide side, Quantity quantity) const;
+    double calculate_market_impact(OrderSide side, Quantity quantity) const;
+    Quantity get_volume_at_level(OrderSide side, Price price_level) const;
+
+    bool is_crossed() const;
+    bool is_locked() const;
+    bool validate() const;
+
+    // ========================================================================
+    // Modifiers
+    // ========================================================================
+
+    void set_sequence(uint64_t seq) { sequence_ = seq; }
+    void set_timestamp(Timestamp ts) { timestamp_ = ts; }
+
+private:
     InstrumentId instrument_id_;
-    std::vector<OrderBookLevel> bids_;
-    std::vector<OrderBookLevel> asks_;
+    std::vector<OrderBookLevel> bids_;  // Sorted descending (highest bid first)
+    std::vector<OrderBookLevel> asks_;  // Sorted ascending (lowest ask first)
     Timestamp timestamp_;
-  };
+    OrderBookDepth depth_level_;
+    uint64_t sequence_;  // Monotonic sequence number for tracking updates
+
+    OrderBookStats stats_;
+
+    void compute_stats();
+    void insert_level(std::vector<OrderBookLevel>& levels, const OrderBookLevel& level, bool descending);
+    void remove_level(std::vector<OrderBookLevel>& levels, Price price);
+    bool update_level(std::vector<OrderBookLevel>& levels, Price price, Quantity new_size);
+};
 
   // ============================================================================
   // Market Data Messages (for MessageBus transport)
