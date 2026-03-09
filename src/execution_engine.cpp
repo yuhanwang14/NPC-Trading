@@ -202,7 +202,8 @@ namespace npcTrading
         order->set_filled_qty(Quantity(current_filled + fill_qty));
 
         // Check if fully filled
-        if (order->filled_qty().as_double() >= order->quantity().as_double())
+        constexpr double FILL_EPSILON = 1e-9;
+        if (order->filled_qty().as_double() >= order->quantity().as_double() - FILL_EPSILON)
         {
           order->set_status(OrderStatus::FILLED);
         }
